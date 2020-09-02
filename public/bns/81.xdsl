@@ -1,0 +1,560 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<smile version="1.0" id="V1" numsamples="1000" discsamples="10000">
+	<nodes>
+		<cpt id="Site">
+			<state id="G_Eild" />
+			<state id="G_Alex" />
+			<state id="G_Yea" />
+			<state id="G_Trawool" />
+			<state id="Rubi" />
+			<state id="Tagg" />
+			<state id="Ach" />
+			<state id="Murrin" />
+			<state id="Yea" />
+			<state id="King" />
+			<state id="Sunday" />
+			<state id="Hughes" />
+			<state id="G_LkNag" />
+			<state id="G_Murch" />
+			<state id="G_Shep" />
+			<state id="G_McCoy" />
+			<state id="G_Undera" />
+			<state id="G_Echuca" />
+			<state id="Pranjip" />
+			<state id="Crei_Bran" />
+			<state id="Castle" />
+			<state id="Sevens" />
+			<state id="Broken" />
+			<probabilities>0.04347826 0.04347826 0.04347826 0.04347826 0.04347826 0.04347826 0.04347826 0.04347826 0.04347826 0.04347826 0.04347826 0.04347826 0.04347826 0.04347826 0.04347826 0.04347826 0.04347826 0.04347826 0.04347826 0.04347826 0.04347826 0.04347826 0.04347826</probabilities>
+		</cpt>
+		<deterministic id="Type">
+			<state id="UpperMain" />
+			<state id="UpperTributary" />
+			<state id="MidMain" />
+			<state id="LowerMain" />
+			<state id="LowerTributary" />
+			<state id="Broken" />
+			<parents>Site</parents>
+			<resultingstates>UpperMain UpperMain UpperMain UpperMain UpperTributary UpperTributary UpperTributary UpperTributary UpperTributary UpperTributary UpperTributary UpperTributary MidMain LowerMain LowerMain LowerMain LowerMain LowerMain LowerTributary LowerTributary LowerTributary LowerTributary Broken</resultingstates>
+		</deterministic>
+		<cpt id="Stocking">
+			<state id="None" />
+			<state id="Low" />
+			<state id="High" />
+			<parents>Site</parents>
+			<probabilities>0.3333333333333333 0.3333333333333333 0.3333333333333333 0.3333333333333333 0.3333333333333333 0.3333333333333333 0.3333333333333333 0.3333333333333333 0.3333333333333333 0.3333333333333333 0.3333333333333333 0.3333333333333333 0.3333333333333333 0.3333333333333333 0.3333333333333333 0.3333333333333333 0.3333333333333333 0.3333333333333333 0.3333333333333333 0.3333333333333333 0.3333333333333333 0.3333333333333333 0.3333333333333333 0.3333333333333333 0.3333333333333333 0.3333333333333333 0.3333333333333333 0.3333333333333333 0.3333333333333333 0.3333333333333333 0.3333333333333333 0.3333333333333333 0.3333333333333333 0.3333333333333333 0.3333333333333333 0.3333333333333333 0.3333333333333333 0.3333333333333333 0.3333333333333333 0.3333333333333333 0.3333333333333333 0.3333333333333333 0.3333333333333333 0.3333333333333333 0.3333333333333333 0.3333333333333333 0.3333333333333333 0.3333333333333333 0.3333333333333333 0.3333333333333333 0.3333333333333333 0.3333333333333333 0.3333333333333333 0.3333333333333333 0.3333333333333333 0.3333333333333333 0.3333333333333333 0.3333333333333333 0.3333333333333333 0.3333333333333333 0.3333333333333333 0.3333333333333333 0.3333333333333333 0.3333333333333333 0.3333333333333333 0.3333333333333333 0.3333333333333333 0.3333333333333333 0.3333333333333333</probabilities>
+		</cpt>
+		<equation id="Migspp">
+			<definition lower="0" upper="15">Migspp=0</definition>
+			<discretization>
+				<interval label="Low" upper="3" />
+				<interval label="High" upper="15" />
+			</discretization>
+		</equation>
+		<equation id="pH">
+			<definition lower="1" upper="14">pH=0</definition>
+			<discretization>
+				<interval label="alkaline" upper="5" />
+				<interval label="neutral" upper="9" />
+				<interval label="acidic" upper="14" />
+			</discretization>
+		</equation>
+		<equation id="DO">
+			<definition lower="0" upper="200">DO=0</definition>
+			<discretization>
+				<interval label="ExtremeLow" upper="30" />
+				<interval label="Normal" upper="110" />
+				<interval label="ExtremeHigh" upper="200" />
+			</discretization>
+		</equation>
+		<equation id="Toxicants">
+			<definition lower="0" upper="100">Toxicants=0</definition>
+			<discretization>
+				<interval label="Low" upper="33" />
+				<interval label="Medium" upper="66" />
+				<interval label="High" upper="100" />
+			</discretization>
+		</equation>
+		<equation id="Salinity">
+			<definition lower="0" upper="56000">Salinity=0</definition>
+			<discretization>
+				<interval label="Low" upper="1000" />
+				<interval label="Medium" upper="3000" />
+				<interval label="High" upper="56000" />
+			</discretization>
+		</equation>
+		<equation id="Turb">
+			<definition lower="0" upper="10000">Turb=0</definition>
+			<discretization>
+				<interval label="Low" upper="100" />
+				<interval label="Medium" upper="1000" />
+				<interval label="High" upper="10000" />
+			</discretization>
+		</equation>
+		<cpt id="Barrier">
+			<state id="No" />
+			<state id="Innundated" />
+			<state id="CompleteShallow" />
+			<state id="CompleteDeep" />
+			<parents>Site</parents>
+			<probabilities>0.25 0.25 0.25 0.25 0.25 0.25 0.25 0.25 0.25 0.25 0.25 0.25 0.25 0.25 0.25 0.25 0.25 0.25 0.25 0.25 0.25 0.25 0.25 0.25 0.25 0.25 0.25 0.25 0.25 0.25 0.25 0.25 0.25 0.25 0.25 0.25 0.25 0.25 0.25 0.25 0.25 0.25 0.25 0.25 0.25 0.25 0.25 0.25 0.25 0.25 0.25 0.25 0.25 0.25 0.25 0.25 0.25 0.25 0.25 0.25 0.25 0.25 0.25 0.25 0.25 0.25 0.25 0.25 0.25 0.25 0.25 0.25 0.25 0.25 0.25 0.25 0.25 0.25 0.25 0.25 0.25 0.25 0.25 0.25 0.25 0.25 0.25 0.25 0.25 0.25 0.25 0.25</probabilities>
+		</cpt>
+		<equation id="AvrSummer">
+			<definition lower="0" upper="1000">AvrSummer=0</definition>
+			<discretization>
+				<interval label="ExtDecrease" upper="25" />
+				<interval label="Decrease" upper="75" />
+				<interval label="NoChange" upper="125" />
+				<interval label="Increase" upper="175" />
+				<interval label="ExtIncrease" upper="1000" />
+			</discretization>
+		</equation>
+		<equation id="AvrWinter">
+			<definition lower="0" upper="1000">AvrWinter=0</definition>
+			<discretization>
+				<interval label="ExtDecrease" upper="25" />
+				<interval label="Decrease" upper="75" />
+				<interval label="NoChange" upper="125" />
+				<interval label="Increase" upper="175" />
+				<interval label="ExtIncrease" upper="1000" />
+			</discretization>
+		</equation>
+		<equation id="HabSimp">
+			<definition lower="0" upper="100">HabSimp=0</definition>
+			<discretization>
+				<interval label="Complete" upper="33" />
+				<interval label="Some" upper="66" />
+				<interval label="None" upper="100" />
+			</discretization>
+		</equation>
+		<equation id="Riparian">
+			<definition lower="0" upper="100">Riparian=0</definition>
+			<discretization>
+				<interval label="Degraded" upper="33" />
+				<interval label="Moderate" upper="66" />
+				<interval label="Intact" upper="100" />
+			</discretization>
+		</equation>
+		<equation id="Snags">
+			<definition lower="0" upper="100">Snags=0</definition>
+			<discretization>
+				<interval label="Low" upper="33" />
+				<interval label="Medium" upper="66" />
+				<interval label="High" upper="100" />
+			</discretization>
+		</equation>
+		<equation id="MinSummer">
+			<definition lower="0" upper="1000">MinSummer=0</definition>
+			<discretization>
+				<interval label="ExtDecrease" upper="25" />
+				<interval label="Decrease" upper="75" />
+				<interval label="NoChange" upper="125" />
+				<interval label="Increase" upper="175" />
+				<interval label="ExtIncrease" upper="1000" />
+			</discretization>
+		</equation>
+		<equation id="MaxWinter">
+			<definition lower="0" upper="1000">MaxWinter=0</definition>
+			<discretization>
+				<interval label="ExtDecrease" upper="25" />
+				<interval label="Decrease" upper="75" />
+				<interval label="NoChange" upper="125" />
+				<interval label="Increase" upper="175" />
+				<interval label="ExtIncrease" upper="1000" />
+			</discretization>
+		</equation>
+		<equation id="Food">
+			<definition lower="0" upper="4">Food=0</definition>
+			<discretization>
+				<interval label="Low" upper="1" />
+				<interval label="Medium" upper="3" />
+				<interval label="High" upper="4" />
+			</discretization>
+		</equation>
+		<equation id="PopStat">
+			<definition lower="0" upper="2000">PopStat=0</definition>
+			<discretization>
+				<interval label="Low" upper="54" />
+				<interval label="High" upper="2000" />
+			</discretization>
+		</equation>
+		<equation id="Aliens">
+			<definition lower="0" upper="2000">Aliens=0</definition>
+			<discretization>
+				<interval label="Yes" upper="15" />
+				<interval label="No" upper="2000" />
+			</discretization>
+		</equation>
+		<cpt id="Fishing">
+			<state id="Low" />
+			<state id="High" />
+			<parents>Site</parents>
+			<probabilities>0.5 0.5 0.5 0.5 0.5 0.5 0.5 0.5 0.5 0.5 0.5 0.5 0.5 0.5 0.5 0.5 0.5 0.5 0.5 0.5 0.5 0.5 0.5 0.5 0.5 0.5 0.5 0.5 0.5 0.5 0.5 0.5 0.5 0.5 0.5 0.5 0.5 0.5 0.5 0.5 0.5 0.5 0.5 0.5 0.5 0.5</probabilities>
+		</cpt>
+		<equation id="NonMig">
+			<definition lower="0" upper="15">NonMig=0</definition>
+			<discretization>
+				<interval label="Low" upper="3" />
+				<interval label="High" upper="15" />
+			</discretization>
+		</equation>
+		<cpt id="Time_Scale">
+			<state id="One_year" />
+			<state id="Five_year" />
+			<probabilities>0.5 0.5</probabilities>
+		</cpt>
+		<equation id="Temp">
+			<definition lower="0" upper="10">Temp=0</definition>
+			<discretization>
+				<interval label="NoChange" upper="2" />
+				<interval label="Moderate" upper="4" />
+				<interval label="Major" upper="10" />
+			</discretization>
+		</equation>
+		<equation id="WQmain">
+			<parents>DO pH Toxicants Turb Salinity Temp</parents>
+			<definition lower="0" upper="100000">WQmain=DO+pH+Toxicants+Turb+Salinity+Temp</definition>
+			<discretization>
+				<interval label="High" upper="4000" />
+				<interval label="Medium" upper="8000" />
+				<interval label="Low" upper="100000" />
+			</discretization>
+		</equation>
+		<equation id="LowFlowSp">
+			<parents>MinSummer WQmain Food</parents>
+			<definition lower="0" upper="43">LowFlowSp=MinSummer+WQmain+Food</definition>
+			<discretization>
+				<interval label="Low" upper="8" />
+				<interval label="High" upper="43" />
+			</discretization>
+		</equation>
+		<cpt id="CommCh">
+			<state id="Yes" />
+			<state id="No" />
+			<parents>Fishing</parents>
+			<probabilities>0.5 0.5 0.5 0.5</probabilities>
+		</cpt>
+		<equation id="Floodplain">
+			<parents>MaxWinter</parents>
+			<definition lower="0" upper="100">Floodplain=MaxWinter</definition>
+			<discretization>
+				<interval label="no" upper="50" />
+				<interval label="yes" upper="100" />
+			</discretization>
+		</equation>
+		<cpt id="BiolPoten">
+			<state id="Low" />
+			<state id="Medium" />
+			<state id="High" />
+			<parents>Time_Scale CommCh Stocking</parents>
+			<probabilities>0.3333333333333333 0.3333333333333333 0.3333333333333333 0.3333333333333333 0.3333333333333333 0.3333333333333333 0.3333333333333333 0.3333333333333333 0.3333333333333333 0.3333333333333333 0.3333333333333333 0.3333333333333333 0.3333333333333333 0.3333333333333333 0.3333333333333333 0.3333333333333333 0.3333333333333333 0.3333333333333333 0.3333333333333333 0.3333333333333333 0.3333333333333333 0.3333333333333333 0.3333333333333333 0.3333333333333333 0.3333333333333333 0.3333333333333333 0.3333333333333333 0.3333333333333333 0.3333333333333333 0.3333333333333333 0.3333333333333333 0.3333333333333333 0.3333333333333333 0.3333333333333333 0.3333333333333333 0.3333333333333333</probabilities>
+		</cpt>
+		<cpt id="Connectivity">
+			<state id="Yes" />
+			<state id="No" />
+			<parents>Barrier</parents>
+			<probabilities>0.5 0.5 0.5 0.5 0.5 0.5 0.5 0.5</probabilities>
+		</cpt>
+		<cpt id="CurrentDiversity">
+			<state id="low" />
+			<state id="high" />
+			<parents>Connectivity</parents>
+			<probabilities>0.5 0.5 0.5 0.5</probabilities>
+		</cpt>
+		<equation id="OverallFlow">
+			<parents>AvrWinter MaxWinter AvrSummer MinSummer</parents>
+			<definition lower="0" upper="200">OverallFlow=AvrWinter+MaxWinter+AvrSummer+MinSummer</definition>
+			<discretization>
+				<interval label="ExtDecrease" upper="25" />
+				<interval label="Decrease" upper="75" />
+				<interval label="NoChange" upper="125" />
+				<interval label="Increase" upper="175" />
+				<interval label="ExtIncrease" upper="200" />
+			</discretization>
+		</equation>
+		<equation id="StrucHab">
+			<parents>Riparian Snags HabSimp</parents>
+			<definition lower="0" upper="400">StrucHab=Riparian+Snags+HabSimp</definition>
+			<discretization>
+				<interval label="Low" upper="99" />
+				<interval label="Medium" upper="198" />
+				<interval label="High" upper="400" />
+			</discretization>
+		</equation>
+		<equation id="FutureAbundance">
+			<parents>WQmain StrucHab OverallFlow</parents>
+			<definition lower="0" upper="1000">FutureAbundance=WQmain+StrucHab+OverallFlow</definition>
+			<discretization>
+				<interval label="Low" upper="54" />
+				<interval label="High" upper="1000" />
+			</discretization>
+		</equation>
+		<cpt id="FutureDiversity">
+			<state id="Low" />
+			<state id="High" />
+			<parents>Time_Scale CurrentDiversity</parents>
+			<probabilities>0.5 0.5 0.5 0.5 0.5 0.5 0.5 0.5</probabilities>
+		</cpt>
+	</nodes>
+	<extensions>
+		<genie version="1.0" app="SMILE Sep 17 2012" name="Sub0" faultnameformat="nodestate">
+			<node id="Site">
+				<name>Site</name>
+				<interior color="e5f6f7" />
+				<outline color="0000bb" />
+				<font color="000000" name="MS Sans Serif" size="8" />
+				<position>1750 222 1826 258</position>
+			</node>
+			<node id="Type">
+				<name>Type</name>
+				<interior color="e5f6f7" />
+				<outline color="0000bb" />
+				<font color="000000" name="MS Sans Serif" size="8" />
+				<position>1750 540 1826 576</position>
+			</node>
+			<node id="Stocking">
+				<name>Stocking Rate</name>
+				<interior color="e5f6f7" />
+				<outline color="0000bb" />
+				<font color="000000" name="MS Sans Serif" size="8" />
+				<position>1462 876 1538 912</position>
+				<comment>Only interested in sustainable populations - include those maintained by stocking or established by stocking?\nMust NOT include translocated species (aliens?) but fish native to the area\n</comment>
+			</node>
+			<node id="Migspp">
+				<name>Migratory spp.</name>
+				<interior color="e5f6f7" />
+				<outline color="0000bb" />
+				<font color="000000" name="MS Sans Serif" size="8" />
+				<position>1462 1074 1538 1110</position>
+			</node>
+			<node id="pH">
+				<name>pH</name>
+				<interior color="e5f6f7" />
+				<outline color="0000bb" />
+				<font color="000000" name="MS Sans Serif" size="8" />
+				<position>142 456 218 492</position>
+			</node>
+			<node id="DO">
+				<name>Dissolved Oxygen</name>
+				<interior color="e5f6f7" />
+				<outline color="0000bb" />
+				<font color="000000" name="MS Sans Serif" size="8" />
+				<position>250 558 326 594</position>
+				<comment>Percentage saturation</comment>
+			</node>
+			<node id="Toxicants">
+				<name>Anthropogenic Inputs</name>
+				<interior color="e5f6f7" />
+				<outline color="0000bb" />
+				<font color="000000" name="MS Sans Serif" size="8" />
+				<position>352 660 428 696</position>
+				<comment>Subjective node - based on expert opinion</comment>
+			</node>
+			<node id="Salinity">
+				<name>Salinity</name>
+				<interior color="e5f6f7" />
+				<outline color="0000bb" />
+				<font color="000000" name="MS Sans Serif" size="8" />
+				<position>148 798 224 834</position>
+				<comment> mg/L = 0.68 x conductivity[Hart et al., 1991]</comment>
+			</node>
+			<node id="Turb">
+				<name>Turbidity</name>
+				<interior color="e5f6f7" />
+				<outline color="0000bb" />
+				<font color="000000" name="MS Sans Serif" size="8" />
+				<position>148 1062 224 1098</position>
+				<comment>NTU</comment>
+			</node>
+			<node id="Barrier">
+				<name>Barrier</name>
+				<interior color="e5f6f7" />
+				<outline color="0000bb" />
+				<font color="000000" name="MS Sans Serif" size="8" />
+				<position>712 60 788 96</position>
+			</node>
+			<node id="AvrSummer">
+				<name>Change in Avr Flows Summer-Autumn</name>
+				<interior color="e5f6f7" />
+				<outline color="0000bb" />
+				<font color="000000" name="MS Sans Serif" size="8" />
+				<position>526 240 602 276</position>
+			</node>
+			<node id="AvrWinter">
+				<name>Change in Avr Flows Winter-Spring</name>
+				<interior color="e5f6f7" />
+				<outline color="0000bb" />
+				<font color="000000" name="MS Sans Serif" size="8" />
+				<position>826 240 902 276</position>
+			</node>
+			<node id="HabSimp">
+				<name>Habitat Simplification, Aquatic Veg</name>
+				<interior color="e5f6f7" />
+				<outline color="0000bb" />
+				<font color="000000" name="MS Sans Serif" size="8" />
+				<position>1276 258 1352 294</position>
+			</node>
+			<node id="Riparian">
+				<name>Native Riparian  Veg.</name>
+				<interior color="e5f6f7" />
+				<outline color="0000bb" />
+				<font color="000000" name="MS Sans Serif" size="8" />
+				<position>1426 366 1502 402</position>
+			</node>
+			<node id="Snags">
+				<name>Snags.</name>
+				<interior color="e5f6f7" />
+				<outline color="0000bb" />
+				<font color="000000" name="MS Sans Serif" size="8" />
+				<position>1150 366 1226 402</position>
+			</node>
+			<node id="MinSummer">
+				<name>Change in Min Flows Summer-Autumn</name>
+				<interior color="e5f6f7" />
+				<outline color="0000bb" />
+				<font color="000000" name="MS Sans Serif" size="8" />
+				<position>526 402 602 438</position>
+			</node>
+			<node id="MaxWinter">
+				<name>Change in Max Flows Winter-Spring</name>
+				<interior color="e5f6f7" />
+				<outline color="0000bb" />
+				<font color="000000" name="MS Sans Serif" size="8" />
+				<position>832 402 908 438</position>
+			</node>
+			<node id="Food">
+				<name>Macroinvertebrates, Zoobenthos</name>
+				<interior color="e5f6f7" />
+				<outline color="0000bb" />
+				<font color="000000" name="MS Sans Serif" size="8" />
+				<position>814 792 890 828</position>
+				<comment>AUSRIVAS score\n&gt; 0.80         4\n0.79 - 0.60  3\n0.59 - 0.40  2\n0.39 - 0.20  1\n&lt;0.20          0\nNo connection with other nodes as score already takes physical environment into account (don&apos;t want to double up) </comment>
+			</node>
+			<node id="PopStat">
+				<name>Current Abundance</name>
+				<interior color="e5f6f7" />
+				<outline color="0000bb" />
+				<font color="000000" name="MS Sans Serif" size="8" />
+				<position>1174 798 1250 834</position>
+				<comment>Percentile 40% : Draft native fish strategy - native spp. make up 60% or more of population</comment>
+			</node>
+			<node id="Aliens">
+				<name>Alien Threat.</name>
+				<interior color="e5f6f7" />
+				<outline color="0000bb" />
+				<font color="000000" name="MS Sans Serif" size="8" />
+				<position>1510 660 1586 696</position>
+				<comment>Percentile 40% : Draft native fish strategy - alien spp. no more than 40% of population</comment>
+			</node>
+			<node id="Fishing">
+				<name>Loss of Fish</name>
+				<interior color="e5f6f7" />
+				<outline color="0000bb" />
+				<font color="000000" name="MS Sans Serif" size="8" />
+				<position>1336 660 1412 696</position>
+			</node>
+			<node id="NonMig">
+				<name>Non-Migratory spp.</name>
+				<interior color="e5f6f7" />
+				<outline color="0000bb" />
+				<font color="000000" name="MS Sans Serif" size="8" />
+				<position>1282 1074 1358 1110</position>
+			</node>
+			<node id="Time_Scale">
+				<name>Time_Scale</name>
+				<interior color="e5f6f7" />
+				<outline color="0000bb" />
+				<font color="000000" name="MS Sans Serif" size="8" />
+				<position>298 1278 374 1314</position>
+			</node>
+			<node id="Temp">
+				<name>Temperature Modification</name>
+				<interior color="e5f6f7" />
+				<outline color="0000bb" />
+				<font color="000000" name="MS Sans Serif" size="8" />
+				<position>286 312 362 348</position>
+			</node>
+			<node id="WQmain">
+				<name>Water Quality Habitat Descriptor.</name>
+				<interior color="e5f6f7" />
+				<outline color="0000bb" />
+				<font color="000000" name="MS Sans Serif" size="8" />
+				<position>286 936 362 972</position>
+			</node>
+			<node id="LowFlowSp">
+				<name>Potential Recruitment</name>
+				<interior color="e5f6f7" />
+				<outline color="0000bb" />
+				<font color="000000" name="MS Sans Serif" size="8" />
+				<position>814 936 890 972</position>
+				<comment>Recruitment TO ADULTS\n\nLow Flow\nHigh Temp\n</comment>
+			</node>
+			<node id="CommCh">
+				<name>Community Change</name>
+				<interior color="e5f6f7" />
+				<outline color="0000bb" />
+				<font color="000000" name="MS Sans Serif" size="8" />
+				<position>1396 786 1472 822</position>
+			</node>
+			<node id="Floodplain">
+				<name>Floodplain Inundation</name>
+				<interior color="e5f6f7" />
+				<outline color="0000bb" />
+				<font color="000000" name="MS Sans Serif" size="8" />
+				<position>946 606 1022 642</position>
+				<comment>Probability of innundation during a 1 year period</comment>
+			</node>
+			<node id="BiolPoten">
+				<name>Natives Biological Potential Descriptor</name>
+				<interior color="e5f6f7" />
+				<outline color="0000bb" />
+				<font color="000000" name="MS Sans Serif" size="8" />
+				<position>1174 936 1250 972</position>
+			</node>
+			<node id="Connectivity">
+				<name>Connectivity </name>
+				<interior color="e5f6f7" />
+				<outline color="0000bb" />
+				<font color="000000" name="MS Sans Serif" size="8" />
+				<position>1630 1074 1706 1110</position>
+			</node>
+			<node id="CurrentDiversity">
+				<name>Current Diversity</name>
+				<interior color="e5f6f7" />
+				<outline color="0000bb" />
+				<font color="000000" name="MS Sans Serif" size="8" />
+				<position>1462 1212 1538 1248</position>
+			</node>
+			<node id="OverallFlow">
+				<name>Hydraulic Habitat Descriptor</name>
+				<interior color="e5f6f7" />
+				<outline color="0000bb" />
+				<font color="000000" name="MS Sans Serif" size="8" />
+				<position>688 606 764 642</position>
+			</node>
+			<node id="StrucHab">
+				<name>Diverse Structural Habitat Descriptor.</name>
+				<interior color="e5f6f7" />
+				<outline color="0000bb" />
+				<font color="000000" name="MS Sans Serif" size="8" />
+				<position>1276 498 1352 534</position>
+				<comment>StrucHab (Riparian, Snags, HabSimp) = \nRiparian + Snags + HabSimp</comment>
+			</node>
+			<node id="FutureAbundance">
+				<name>Future Abundance</name>
+				<interior color="e5f6f7" />
+				<outline color="0000bb" />
+				<font color="000000" name="MS Sans Serif" size="8" />
+				<position>688 1212 764 1248</position>
+				<comment>Percentile 40% : Draft native fish strategy - native spp. make up 60% or more of population</comment>
+			</node>
+			<node id="FutureDiversity">
+				<name>Future Diversity.</name>
+				<interior color="e5f6f7" />
+				<outline color="0000bb" />
+				<font color="000000" name="MS Sans Serif" size="8" />
+				<position>1054 1248 1130 1284</position>
+			</node>
+		</genie>
+	</extensions>
+</smile>

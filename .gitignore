@@ -1,0 +1,3 @@
+node_modules/*
+build/config.gypi
+package-lock.json
