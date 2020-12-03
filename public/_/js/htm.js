@@ -37,7 +37,7 @@
 			/// pass
 		}
 		/// This is far quicker than instanceof, though more prone to error
-		else if (arg.nodeType && arg.nodeName) {
+		else if (arg && arg.nodeType && arg.nodeName) {
 		//else if (arg instanceof Element || arg instanceof DocumentFragment) {
 			el.appendChild(arg);
 		}

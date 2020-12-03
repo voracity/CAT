@@ -12,6 +12,7 @@ var port = 3000;
 
 var db = null;
 var componentStore = [];
+var appCache = {};
 
 (async function() {
 	db = await sqlite.open('cat.sqlite');
@@ -88,14 +89,14 @@ function loadRoute(app, path) {
 			return;
 		}
 		if (fileMod.update) {
-			let updateAndStop = await fileMod.update(req,res,db);
+			let updateAndStop = await fileMod.update(req,res,db,appCache);
 			if (updateAndStop) {
 				return;
 			}
 		}
 		let data = null;
 		if (fileMod.prepareData) {
-			data = await fileMod.prepareData(req,res,db);
+			data = await fileMod.prepareData(req,res,db,appCache);
 		}
 		if (req.query.requestType == 'data') {
 			res.send(JSON.stringify(data));

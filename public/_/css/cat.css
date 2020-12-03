@@ -24,12 +24,33 @@ a { text-decoration: none; }
 .node { position: absolute; border: solid 1px black; padding: 4px; z-index: 10; background: white; }
 .node h3 { margin: 0; font-size: 11pt; border-bottom: solid 1px black; margin: -4px -4px 0 -4px; padding: 0 4px; }
 
-.node .states { display: grid; grid-template-columns: auto auto auto; grid-gap: 0 3px; }
+.node .states { display: grid; grid-template-columns: auto auto auto auto; grid-gap: 0 3px; }
 .node .state { font-size: 10pt; display: contents; cursor: pointer; }
 .node .barParent { width: 60px; position: relative; }
 .node .bar { display: inline-block; background: black; height: 1em; transition: width 0.3s; }
 .node .controls { position: absolute; padding: 0; margin: -4px -4px 0 -4px; bottom: 100%; text-align: right; width: 100%; }
 .node .controls a { color: #777; font-size: 10pt; }
+/** This is ... bad. Still leaves grid-gap. For now, will leave, but maybe replace with table! **/
+.node .target { width: 0; overflow: hidden; }
 
+.node.hasEvidence { background: #eee; }
 .node[data-role="cause"] { background: rgb(168,206,151); }
 .node[data-role="effect"] { background: rgb(140,161,216); }
+.node[data-role] .target { width: unset; overflow: unset; }
+
+.node a.menu { font-weight: bold; font-size: 14pt; }
+
+.infoWindows { position: fixed; right: 10px; z-index: 10; }
+
+.infoWindow { border: solid 1px black; background: white; box-shadow: 1px 1px 1px #ccc; }
+.infoWindow h2 { margin: 0; font-size: 14pt; padding: 3px; border-bottom: solid 1px black;  }
+.infoWindow label { white-space: pre; }
+.infoWindow .info { padding: 5px; display: grid; grid-template-columns: min-content auto; grid-gap: 5px; }
+.infoWindow .field { display: contents; }
+.infoWindow .cause { color: rgb(80,125,60); }
+.infoWindow .effect { color: rgb(48,73,141); }
+
+.ciTableWindow { margin-top: 10px; }
+.ciTableWindow .showTable { text-align: right; }
+.ciTable table { border: solid 1px #ccc; border-collapse: collapse; margin-top: 10px; float: right; }
+.ciTable th, .ciTable td { border: solid 1px #ccc; padding: 3px 6px; text-align: right; }

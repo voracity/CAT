@@ -10,14 +10,18 @@ var voidPtr = ref.refType(ref.types.void);
 	and convert them into JS arrays of the given size. e.g.
 	C: double* somefunc();
 	JS: pointerAsArray(<ffi.Library>.somefunc(), ref.types.double, 10)
+	
+	<sigh> Not working in ffi-napi 3.0.1
 **/
 function pointerAsArray(ptr, type, size) {
+	//console.log('ptr', ptr, type.size, size, type.size*size);
 	let buf = ref.reinterpret(ptr, type.size*size);
 	return ArrayType(type)(buf, size);
 }
 
 var g = ffi.Library('bismile64', {
 	'new_network': [voidPtr, []],
+	'copy_network': [voidPtr, [voidPtr]],
 	'delete_network': [voidPtr, [voidPtr]],
 	'UpdateBeliefs': [ref.types.void, [voidPtr]],
 	'ReadFile': [ref.types.void, [voidPtr, 'string']],
@@ -56,6 +60,8 @@ var g = ffi.Library('bismile64', {
 	'header_SetComment': [voidPtr, [voidPtr, 'string']],
 	'nodeDefinition_GetNumberOfOutcomes': ['int', [voidPtr]],
 	'CalcProbEvidence': ['double', [voidPtr]],
+	'nodeValue_IsRealEvidence': ['int', [voidPtr]],
+	'nodeValue_GetEvidence': ['int', [voidPtr]],
 	'nodeValue_SetEvidence': ['void', [voidPtr, 'int']],
 	'nodeDefinition_GetOutcomesNames': [voidPtr, [voidPtr]],
 	'nodeDefinition_SetDoubleDefinition': ['void', [voidPtr, 'int', voidPtr]],
@@ -67,6 +73,8 @@ var g = ffi.Library('bismile64', {
 	'nodeValue_GetVirtualEvidence': [ref.refType(ref.types.double), [voidPtr]],
 	'nodeValue_SetVirtualEvidence': ['void', [voidPtr, 'int', voidPtr]],
 	'nodeDefinition_AddOutcome': ['void', [voidPtr, 'string']],
+	'nodeDefinition_SetNumberOfOutcomes': ['int', [voidPtr, 'int']],
+	'nodeDefinition_SetNumberOfOutcomesStr': ['int', [voidPtr, 'int', voidPtr]],
 	'nodeDefinition_RenameOutcomes': ['void', [voidPtr, 'int', voidPtr]],
 	'GetParents': [voidPtr, [voidPtr, 'int']],
 	'new_intArray': [voidPtr, []],
@@ -78,9 +86,16 @@ var g = ffi.Library('bismile64', {
 
 class Net {
 	constructor(fn = null) {
+		/// Reading from file is orders of magnitude faster than copying. Don't copy...
 		this.eNet = g.new_network();
 		this._autoUpdate = true;
+		
+		this.needsUpdate = true;
+		this.forceUpdates = false;
 
+		// Caches
+		this._nodeCache = {};
+	
 		if (fn) {
 			if (fs.existsSync(fn)) {
 				g.ReadFile(this.eNet, fn);
@@ -124,6 +139,17 @@ class Net {
 		}
 	}
 	
+	/*get needsUpdate() {
+		return this._needsUpdate;
+	}
+	
+	set needsUpdate(_needsUpdate) {
+		if (_needsUpdate) {
+			console.trace();
+		}
+		this._needsUpdate = _needsUpdate;
+	}*/
+	
 	/// Replace with makeValidName
 	makeValidId(id, check = true) {
 		var IDREGEX = /([_a-zA-Z])([_0-9a-zA-Z]{0,29})/; /// NOTE: Not anchored at start,end
@@ -160,6 +186,33 @@ class Net {
 	write(fn) {
 		g.WriteFile(this.eNet, fn);
 	}
+	
+	/// Lots of limitations. Basic BNs only
+	clone() {
+		let newNet = new Net();
+		newNet.autoUpdate(false);
+		console.time('in');
+		let s = 0;
+		for (let node of this.nodes()) {
+			newNet.addNode(node.name(), null, node.stateNames());
+			s += node.states().length;
+		}
+		console.log({s});
+		console.timeEnd('in');
+		console.time('out');
+		for (let node of this.nodes()) {
+			let newNode = newNet.node(node.name());
+			newNode.addParents(node.parents().map(p => p.name()));
+			newNode.cpt1d(node.cpt1d());
+			newNode.position(...node.position());
+			newNode.size(...node.size());
+		}
+		console.timeEnd('out');
+		
+		newNet.autoUpdate(true);
+		
+		return newNet;
+	}
 
 	// Engine dependent
 	updateAlgorithm(algorithm = null) {
@@ -169,6 +222,7 @@ class Net {
 		else {
 			g.SetDefaultBNAlgorithm(this.eNet, algorithm);
 		}
+		this.needsUpdate = true;
 	}
 
 	autoUpdate(autoUpdate = null) {
@@ -182,8 +236,11 @@ class Net {
 		return this;
 	}
 
-	update() {
-		g.UpdateBeliefs(this.eNet);
+	update(forceUpdates) {
+		if (this.needsUpdate || forceUpdates || this.forceUpdates) {
+			g.UpdateBeliefs(this.eNet);
+			this.needsUpdate = false;
+		}
 	}
 
 	name(_name = null) {
@@ -214,6 +271,7 @@ class Net {
 		let node = null;
 		try {
 			node = new Node(this, name, states, nodeType);
+			this.needsUpdate = true;
 		}
 		catch (e) {
 			return null;
@@ -237,14 +295,42 @@ class Net {
 
 	retractFindings() {
 		g.ClearAllEvidence(this.eNet);
+		this.needsUpdate = true;
 	}
 
+	findings(findings = null) {
+		if (findings === null) {
+			findings = {}
+			for (let node of this.nodes()) {
+				findings[node.name()] = node.finding();
+			}
+			
+			return findings;
+		}
+		else {
+			for (let [nodeName,finding] of Object.entries(findings)) {
+				if (finding === null) {
+					this.node(nodeName).retractFindings()
+				}
+				else {
+					this.node(nodeName).finding(finding)
+				}
+			}
+		}
+		
+		return this
+	}
+	
 	node(name) {
+		if (name in this._nodeCache)  return this._nodeCache[name];
+		
 		let nodeId = g.FindNode(this.eNet, name);
 		if (nodeId == -2) {
-			return null;
+			return None;
 		}
-		return new Node(this, null, null, null, nodeId);
+		this._nodeCache[name] = new Node(this, null, null, null, nodeId);
+		
+		return this._nodeCache[name];
 	}
 
 	findingsProbability() {
@@ -277,12 +363,130 @@ class Net {
 		/// All node states have rolled back round to 0
 		return false;
 	}
+
+	/// Get MI against all other nodes for (for now) a single node
+	mi(targetNode, o = {}) {
+		o.targetState = o.targetState === undefined ? null : o.targetState;
+		/// Node is test against everything else with the given state ('cos it's easier)
+		o.otherState = o.otherState === undefined ? null: o.otherState;
+		
+		let net = this;
+		//t = time.time()
+		
+		// Get marginals (with whatever current evidence is)
+		let marginals = {}
+		// print('a', time.time() - t)
+		for (let node of net.nodes()) {
+			marginals[node.name()] = node.beliefs()
+		}
+		
+		// Store all node beliefs for every different state in target
+		let beliefsByTargetState = []
+		// print('b', time.time() - t)
+		for (let state of targetNode.states()) {
+			state.setTrueFinding()
+			let beliefs = {}
+			for (let node of net.nodes()) {
+				// The below is wrong, as it requires the marginals to be recomputed as well
+				// if node.name() != targetNode.name() and node.hasFinding():
+					// saved = node.finding()
+					// node.retractFindings()
+					// beliefs[node.name()] = node.beliefs()
+					// node.finding(saved)
+				// else:
+					// beliefs[node.name()] = node.beliefs()
+				beliefs[node.name()] = node.beliefs()
+			}
+			beliefsByTargetState.push(beliefs)
+		}
+		// print('c', time.time() - t)
+		targetNode.retractFindings()
+		
+		// Now, calculate the MI table
+		let miTable = []
+		let targetMarginals = marginals[targetNode.name()]
+		let targetCondProbs = {}
+		for (let node of net.nodes()) {
+			// joint * log ( joint / marginals)
+			// For each prob in target marginal
+			let total = 0
+			targetCondProbs[node.name()] = node.states().map(s => targetNode.states().map(_=>0))
+			for (let [i,targetMarginalProb] of targetMarginals.entries()) {
+				/// Skip targetState if not matching
+				console.log('stsinm', o.targetState, targetNode.state(i).name());
+				if (o.targetState !== null && targetNode.state(i).stateNum !== targetNode.state(o.targetState).stateNum)  continue;
+				let nodeMarginal = marginals[node.name()]
+				// And each prob in both marginal and conditional node beliefs
+				for (let [j,nodeProb] of beliefsByTargetState[i][node.name()].entries()) {
+					/// Skip otherState if not matching
+					console.log('soinm', o.otherState, node.state(j).name());
+					if (o.otherState !== null && node.state(j).stateNum !== node.state(o.otherState).stateNum)  continue;
+					let jointProb = targetMarginalProb*nodeProb
+					let nodeMarginalProb = nodeMarginal[j]
+					let targetCondProb;
+					
+					if (jointProb * targetMarginalProb * nodeMarginalProb != 0) {
+						console.log(node.name(), jointProb, targetMarginalProb, nodeMarginalProb)
+						total += jointProb * Math.log2( jointProb / (targetMarginalProb * nodeMarginalProb) )
+						
+						targetCondProb = jointProb / nodeMarginalProb
+					}
+					else {
+						targetCondProb = 0
+					}
+					
+					targetCondProbs[node.name()][j][i] = targetCondProb
+				}
+			}
+			
+			/// Need to be asymmetric to support Causal MI
+			/// We assume the target is the effect, hence others are the cause
+			/// Then we divide it out, because it was in the joint, and shouldn't have been there for these cases
+			if (o.otherState !== null) {
+				total /= marginals[node.name()][node.state(o.otherState).stateNum];
+			}
+			
+			let minExpRank = 10000000
+			let maxExpRank = -1
+			let minExpRankJ = -1
+			let maxExpRankJ = -1
+			for (let [j,row] of targetCondProbs[node.name()].entries()) {
+				let expRank = row.map((p,i) => i*p).reduce((a,v)=>a+v)
+				//expRank = sum(i*p for i,p in enumerate(row))
+				if (expRank < minExpRank) {
+					minExpRank = expRank
+					minExpRankJ = j
+				}
+				if (expRank > maxExpRank) {
+					maxExpRank = expRank
+					maxExpRankJ = j
+				}
+			}
+			miTable.push([node.name(), total, maxExpRank-minExpRank, minExpRankJ, maxExpRankJ])
+		}
+		
+		console.log(miTable);
+		
+		//print(json.dumps(targetCondProbs, indent='\t'))
+		
+		//return sorted(miTable, key = lambda x: x[1], reverse=True)
+		return miTable
+	}
 }
 
 class Node {
 	constructor(net = null, name = null, states = null, nodeType = null, genieNodeId = null) {
 		this.net = net;
 		this.eId = genieNodeId;
+		this._nodeObjCache = null;
+		this._nodeHdrCache = null;
+		this._nodeDefCache = null;
+		// nyi
+		// self._nodeValCache = None
+		// self._nodeInfoCache = None
+		// self._screenInfoCache = None
+		// self._equationCache = {}
+
 		this._states = null;
 		this._stateNames = null;
 		this._statesLookup = null;
@@ -300,25 +504,40 @@ class Node {
 		}
 
 		if (states) {
+			g.nodeDefinition_SetNumberOfOutcomes(this._gNodeDef(), states.length);
+			//console.log(this.states());
 			this.renameStates(states);
-			for (let i=2; i<states.length; i++) {
+			/*for (let i=2; i<states.length; i++) {
+				console.timeLog('rename');
 				this.addState(states[i]);
-			}
+			}*/
+		}
+		if (genieNodeId === null) {
+			this.net.needsUpdate = true;
 		}
 	}
 
 	_gNode() {
-		return g.GetNode(this.net.eNet, this.eId);
+		if (this._nodeObjCache !== null)  return this._nodeObjCache;
+		this._nodeObjCache = g.GetNode(this.net.eNet, this.eId);
+		return this._nodeObjCache;
 	}
 
 	_gNodeHdr() {
-		let nodeInfoPtr = g.node_Info(this._gNode());
+		if (this._nodeHdrCache !== null) return this._nodeHdrCache;
+		// Not sure why it's so buried away in GeNIe
+		let myNodePtr = g.GetNode(this.net.eNet, this.eId);
+		let nodeInfoPtr = g.node_Info(myNodePtr);
 		let headerPtr = g.nodeInfo_Header(nodeInfoPtr);
+		this._nodeHdrCache = headerPtr;
 		return headerPtr;
 	}
 
 	_gNodeDef() {
-		return g.node_Definition(this._gNode());
+		if (this._nodeDefCache !== null) return this._nodeDefCache;
+		let nodePtr = this._gNode();
+		this._nodeDefCache = g.node_Definition(nodePtr);
+		return this._nodeDefCache;
 	}
 
 	_gNodeVal() {
@@ -326,7 +545,11 @@ class Node {
 	}
 	
 	delete() {
+		if (this.name() in this.net._nodeCache) {
+			delete this.net._nodeCache[this.name()];
+		}
 		g.DeleteNode(this.net.eNet, this.eId);
+		this.net.needsUpdate = true;
 		
 		return null;
 	}
@@ -341,7 +564,12 @@ class Node {
 			return g.header_GetId(header);
 		}
 		else {
+			let oldName = this.name();
 			g.header_SetId(header, _name);
+			if (oldName in this.net._nodeCache) {
+				this.net._nodeCache[name] = this.net._nodeCache[oldName];
+				delete this.net._nodeCache[oldName];
+			}
 		}
 
 		return this;
@@ -402,6 +630,7 @@ class Node {
 		}
 
 		/// Chain
+		this.net.needsUpdate = true;
 		return this;
 	}
 
@@ -416,6 +645,7 @@ class Node {
 		}
 
 		/// Chain
+		this.net.needsUpdate = true;
 		return this;
 	}
 	
@@ -425,6 +655,7 @@ class Node {
 		}
 		
 		/// Chain
+		this.net.needsUpdate = true;
 		return this;
 	}
 
@@ -434,6 +665,7 @@ class Node {
 		}
 		
 		/// Chain
+		this.net.needsUpdate = true;
 		return this;
 	}
 
@@ -442,6 +674,7 @@ class Node {
 		g.nodeDefinition_AddOutcome(nodeDef, name);
 
 		// Chain
+		this.net.needsUpdate = true;
 		return this;
 	}
 
@@ -518,6 +751,9 @@ class Node {
 	state(name) {
 		this._setupStates();
 
+		if (name instanceof State) {
+			name = name.name()
+		}
 		if (typeof(name)!="string") {
 			return this._states[name];
 		}
@@ -537,8 +773,28 @@ class Node {
 		return this._states.includes(state);
 	}
 
-	finding(state) {
-		this.state(state).setTrueFinding();
+	hasFinding() {
+		let gNodeValue = this._gNodeVal()
+		
+		return !!(g.nodeValue_IsRealEvidence(gNodeValue))
+	}
+	
+	finding(state = null) {
+		if (state === null) {
+			if (this.hasFinding()) {
+				let gNodeValue = this._gNodeVal()
+				return this.state(g.nodeValue_GetEvidence(gNodeValue))
+			}
+			else {
+				return null
+			}
+		}
+		else {
+			this.state(state).setTrueFinding()
+			this.net.needsUpdate = true
+		}
+		
+		return this
 	}
 
 	likelihoods(likelihoodVector = null) {
@@ -555,12 +811,14 @@ class Node {
 			let n = likelihoodVector.length;
 			let dp = ArrayType(ref.types.double, n)(likelihoodVector, n);
 			g.nodeValue_SetVirtualEvidence(this._gNodeVal(), n, dp.buffer);
+			this.net.needsUpdate = true;
 		}
 	}
 
 	retractFindings() {
 		let gNodeVal = this._gNodeVal();
 		
+		this.net.needsUpdate = true;
 		return g.nodeValue_ClearEvidence(gNodeVal);
 	}
 		
@@ -616,6 +874,7 @@ class Node {
 
 			let newCptData = ArrayType(ref.types.double, newCpt.length)(newCpt, newCpt.length);
 			g.nodeDefinition_SetDoubleDefinition(nodeDef, newCpt.length, newCptData.buffer);
+			this.net.needsUpdate = true;
 		}
 
 		return this;
@@ -652,6 +911,7 @@ class Node {
 			let nc = ArrayType(ref.types.double, newCpt2.length)(newCpt2);
 
 			g.nodeDefinition_SetDoubleDefinition(nodeDef, nc.length, nc.buffer);
+			this.net.needsUpdate = true;
 		}
 
 		// Chain
@@ -721,6 +981,7 @@ class State {
 	setTrueFinding() {
 		let gNodeValue = this.node._gNodeVal();
 		g.nodeValue_SetEvidence(gNodeValue, this.stateNum);
+		this.node.net.needsUpdate = true;
 	}
 }
 
