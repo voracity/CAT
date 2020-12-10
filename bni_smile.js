@@ -376,13 +376,18 @@ class Net {
 		// Get marginals (with whatever current evidence is)
 		let marginals = {}
 		// print('a', time.time() - t)
+		//net.nodes()[0].states()[0].setTrueFinding();
+		//net.nodes()[0].retractFindings()
 		for (let node of net.nodes()) {
+			//onsole.log(`${node.name()}: ${node.cpt1d()}`);
 			marginals[node.name()] = node.beliefs()
 		}
+		//onsole.log({marginals});
 		
 		// Store all node beliefs for every different state in target
 		let beliefsByTargetState = []
 		// print('b', time.time() - t)
+		//onsole.log({findings: net.findings()});
 		for (let state of targetNode.states()) {
 			state.setTrueFinding()
 			let beliefs = {}
@@ -399,6 +404,7 @@ class Net {
 			}
 			beliefsByTargetState.push(beliefs)
 		}
+		//onsole.log(JSON.stringify({beliefsByTargetState},null,'\t'));
 		// print('c', time.time() - t)
 		targetNode.retractFindings()
 		
@@ -413,20 +419,20 @@ class Net {
 			targetCondProbs[node.name()] = node.states().map(s => targetNode.states().map(_=>0))
 			for (let [i,targetMarginalProb] of targetMarginals.entries()) {
 				/// Skip targetState if not matching
-				console.log('stsinm', o.targetState, targetNode.state(i).name());
+				//onsole.log('stsinm', o.targetState, targetNode.state(i).name());
 				if (o.targetState !== null && targetNode.state(i).stateNum !== targetNode.state(o.targetState).stateNum)  continue;
 				let nodeMarginal = marginals[node.name()]
 				// And each prob in both marginal and conditional node beliefs
 				for (let [j,nodeProb] of beliefsByTargetState[i][node.name()].entries()) {
 					/// Skip otherState if not matching
-					console.log('soinm', o.otherState, node.state(j).name());
+					//onsole.log('soinm', o.otherState, node.state(j).name());
 					if (o.otherState !== null && node.state(j).stateNum !== node.state(o.otherState).stateNum)  continue;
 					let jointProb = targetMarginalProb*nodeProb
 					let nodeMarginalProb = nodeMarginal[j]
 					let targetCondProb;
 					
 					if (jointProb * targetMarginalProb * nodeMarginalProb != 0) {
-						console.log(node.name(), jointProb, targetMarginalProb, nodeMarginalProb)
+						//onsole.log(node.name(), jointProb, targetMarginalProb, nodeMarginalProb)
 						total += jointProb * Math.log2( jointProb / (targetMarginalProb * nodeMarginalProb) )
 						
 						targetCondProb = jointProb / nodeMarginalProb
@@ -465,7 +471,7 @@ class Net {
 			miTable.push([node.name(), total, maxExpRank-minExpRank, minExpRankJ, maxExpRankJ])
 		}
 		
-		console.log(miTable);
+		//onsole.log(miTable);
 		
 		//print(json.dumps(targetCondProbs, indent='\t'))
 		

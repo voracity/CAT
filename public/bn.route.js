@@ -16,12 +16,16 @@ var measurePlugins = {
 			let effect = roles && roles.effect && roles.effect.length && roles.effect[0];
 			console.log("HERE IS CAUSE EFFECT:", cause, effect);
 			if (cause && effect) {
-				let table = net.mi(net.node(effect), {
+				console.log('XXX1');
+				net.mi(net.node(effect));
+				console.log('XXX2');
+				net.mi(net.node(effect));
+				let table2 = net.mi(net.node(effect));
+				let table = net.mi(net.node(effect) , {
 					targetState: ((selectedStates || {})[effect] || [null])[0],
 					otherState: ((selectedStates || {})[cause] || [null])[0],
 				});
-				let table2 = net.mi(net.node(effect));
-				console.log(table);
+				console.log('x', table);
 				let value = table.find(row => row[0] == cause)[1];
 				let effectValue = table2.find(row => row[0] == effect)[1];
 				let percent = value/effectValue;
@@ -257,22 +261,30 @@ module.exports = {
 				let roles2 = {...roles};
 				let allResults = []
 				/// Reset specified cause to its original CPT
-				if (roles2.cause) {
+				if (roles2.cause && roles2.cause[0]) {
 					let causeName = roles2.cause[0];
 					net.node(causeName).cpt1d(origNet.node(causeName).cpt1d().slice());
 				}
 				for (let node of net.nodes()) {
+					/** NOTE: IT MAY BE THE CASE that GeNIe doesn't like having its CPT changed from
+					under it, when there's evidence already in the net. (But I'm not sure; it was producing funny,
+					temperamental results that looked like it wasn't "seeing" the new CPT.) SO ALWAYS: retract findings,
+					then set CPTs, then add back any findings. Alternatively, set/clear evidence on one node seems to
+					be enough. **/
 					//node = net.node('either');
+					let findings = net.findings();
+					net.retractFindings();
 					let causeName = node.name();
 					roles2.cause = [causeName];
 					let cptLength = node.cpt1d().length;
 					let numStates = node.states().length;
 					console.log("CPT 1:", node.cpt1d());
 					node.cpt1d(Array.from({length: cptLength}, _=> 1/numStates));
-					net.update(true);
+					//net.update(true);
 					console.log("CPT 2:", node.cpt1d());
+					net.findings(findings);
 					
-					allResults.push( {cause: causeName, ...measurePlugins.ci.calculate({interventionNet:net}, roles2)} );
+					allResults.push( {cause: causeName, ...measurePlugins.ci.calculate({interventionNet:net}, roles2, selectedStates)} );
 
 					node.cpt1d(origNet.node(causeName).cpt1d().slice());
 				}

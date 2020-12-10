@@ -8,6 +8,7 @@ var bn = {
 	roles: {},
 	selectedStates: {},
 	beliefs: {},
+	ciTableEnabled: false,
 	drawArcs() {
 		let bnView = document.querySelector('.bnView');
 		for (let node of bn.model) {
@@ -58,7 +59,7 @@ var bn = {
 
 	guiUpdateInfoWindows() {
 		q('div.infoWindow')?.remove();
-		q('div.ciTableWindow')?.remove();
+		if (!this.ciTableEnabled)  q('div.ciTableWindow')?.remove();
 		if (this.roles?.cause?.length && this.roles?.effect?.length) {
 			let cause = this.roles.cause[0];
 			let effect = this.roles.effect[0];
@@ -66,7 +67,7 @@ var bn = {
 			let effectStateI = this.selectedStates[effect];
 			let causeState = causeStateI !== undefined ? this.getNode(cause).model.states[causeStateI] : null;
 			let effectState = effectStateI !== undefined ? this.getNode(effect).model.states[effectStateI] : null;
-			q('.infoWindows').append(n('div.infoWindow',
+			q('.infoWindows').prepend(n('div.infoWindow',
 				n('h2', 'Measures'),
 				n('div.info',
 					n('div.field',
@@ -89,27 +90,59 @@ var bn = {
 			
 		}
 		
-		if (this.roles?.effect?.length) {
+		if (this.roles?.effect?.length && !q('.ciTableWindow')) {
 			q('.infoWindows').append(
 				n('div.ciTableWindow',
 					n('div.showTable',
-						n('button.showCiTable', 'Show CI Table', {on: {click: async event => {
-							let reqData = await (await fetch(window.location.href + '&requestType=data&returnType=ciTable&evidence='+JSON.stringify(this.evidence)+'&roles='+JSON.stringify(this.roles)+'&selectedStates='+JSON.stringify(this.selectedStates))).json();
-							let table = n('table', n('tr', ['Cause', 'CI', '%'].map(s => n('th', s))));
-							for (let row of reqData.ciTable) {
-								table.append(n('tr',
-									n('td', row.cause),
-									n('td', Math.round(row.value*10000)/10000),
-									n('td', Math.round(row.percent*1000)/10),
-								));
+						n('button.showCiTable', 'Show CI Table', {on: {click: event => {
+							if (event.target.textContent == 'Show CI Table') {
+								this.ciTableEnabled = true;
+								this.showCiTable();
+								event.target.textContent = 'Hide CI Table';
 							}
-							q('.ciTable').append(table);
+							else {
+								this.ciTableEnabled = false;
+								this.hideCiTable();
+								event.target.textContent = 'Show CI Table';
+							}
 						}}}),
 					),
 					n('div.ciTable'),
 				)
 			);
 		}
+		
+		if (this.ciTableEnabled) {
+			this.showCiTable();
+		}
+	},
+	
+	async showCiTable() {
+		let reqData = await (await fetch(window.location.href + '&requestType=data&returnType=ciTable&evidence='+JSON.stringify(this.evidence)+'&roles='+JSON.stringify(this.roles)+'&selectedStates='+JSON.stringify(this.selectedStates))).json();
+		q('.ciTable table')?.remove();
+		let table = n('table', n('tr', ['Cause', 'CI', '%'].map(s => n('th', s))));
+		for (let row of reqData.ciTable) {
+			let roundedPercent = Math.round(row.percent*1000)/10;
+			table.append(n('tr',
+				n('td', row.cause),
+				n('td', Math.round(row.value*10000)/10000),
+				n('td.percentBar', {style: `--percent-bar: ${row.percent*100}%`}, roundedPercent),
+			));
+			let nodeEl = q(`.node[data-name="${row.cause}"]`);
+			nodeEl.style.setProperty('--strength', ((100 - row.percent*100)/2 + 50) + '%');
+			nodeEl.classList.add('filled');
+			nodeEl.querySelector('div.strength')?.remove();
+			nodeEl.append(n('div.strength', roundedPercent+'%'));
+		}
+		q('.ciTable').append(table);
+	},
+	
+	hideCiTable() {
+		qa('.filled').forEach(n => {
+			n.classList.remove('filled');
+			n.querySelector('div.strength')?.remove();
+		});
+		q('div.ciTable table')?.remove();
 	},
 };
 
