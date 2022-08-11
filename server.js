@@ -4,8 +4,11 @@ var {n, toHtml} = require('htm');
 var fs = require('fs');
 var pth = require('path');
 var chokidar = require('chokidar');
+var sqlite3 = require('sqlite3');
 var sqlite = require('sqlite');
 var pages = require('./pages');
+var fileUpload = require('express-fileupload');
+var cookieParser = require('cookie-parser');
 
 var app = express();
 var port = 3000;
@@ -15,10 +18,18 @@ var componentStore = [];
 var appCache = {};
 
 (async function() {
-	db = await sqlite.open('cat.sqlite');
+	db = await sqlite.open({filename:'cat.sqlite', driver:sqlite3.Database});
 })();
 
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+app.use(fileUpload());
+app.use(cookieParser());
+
+app.use((err, req, res, next) => {
+  console.error(err.stack)
+  res.status(500).send('Something broke!')
+})
 
 app.use('/public', (req,res,next) => {
 	if (req.url.match(/\.route\.js$/)) {
@@ -60,6 +71,9 @@ function loadRoute(app, path) {
 	} catch(e) {}
 	
 	let fileMod = require(modulePath);
+	if (!fileMod.component) {
+		return {failed: true};
+	}
 	
 	/// Store the component
 	let matchingComponentI = componentStore.findIndex(c => c.name == fileMod.component.name);
@@ -82,8 +96,67 @@ function loadRoute(app, path) {
 			result.updated = true;
 		}
 	}
+	let loadActiveUser = async (sessionId) => {
+		let userInfo = await db.get(`select * from users
+			left join user_sessions on users.id = user_sessions.userId
+			where sessionId = ?`, sessionId) ?? null;
+		/// The row id of the session is not useful (and confusing)
+		/// return the user id instead
+		if (userInfo) {
+			userInfo.id = userInfo.userId;
+		}
+		console.log('userInfo:', userInfo);
+		return userInfo;
+	};
+	let accessOk = (res,req,db,user) => {
+		if (fileMod.noUserRequired)  return true;
+		
+		if (user)  return true;
+		
+		return false;
+	}
 	//console.log(app._router.stack);
 	let handler = async(req,res) => {
+		/// Identify when a redirect has occurred
+		let redirected = false;
+		res.__redirect = res.redirect;
+		res.redirect = (...args) => {
+			res.__redirect(...args);
+			redirected = true;
+		}
+		
+		let user = null;
+		let sessionId = null;
+		if (!req.cookies.sessionId) {
+			sessionId = Math.random().toString().slice(2);
+			res.cookie('sessionId', sessionId);
+		}
+		else {
+			sessionId = req.cookies.sessionId;
+		}
+		user = await loadActiveUser(sessionId);
+		/// Attach user info to request
+		req._user = user;
+		console.log(user);
+		if (!accessOk(req,res,db,user)) {
+			res.send('Not logged in');
+			return;
+		}
+		
+		/// If there's no request type, it's a standard page request. Prepare the page,
+		/// and attach to the request.
+		if (!req.query.requestType) {
+			/// First, make our page template.
+			///   If string, lookup the 'pages' module.
+			///   Otherwise, assume it's a page class.
+			console.log('template:', fileMod.template);
+			let template = fileMod.template ? fileMod.template : 'StandardPage';
+			let page = typeof(template)=='string' ? new pages[template] : new template;
+			page.make();
+			/// Attach to request
+			req._page = page;
+		}
+		
 		if (req.query.requestType == 'component') {
 			res.send(fileMod.component.toString());
 			return;
@@ -94,39 +167,53 @@ function loadRoute(app, path) {
 				return;
 			}
 		}
+		
+		// If need to redirect in prepareData, return {__redirect: "<location>"}
 		let data = null;
 		if (fileMod.prepareData) {
 			data = await fileMod.prepareData(req,res,db,appCache);
 		}
-		if (req.query.requestType == 'data') {
-			res.send(JSON.stringify(data));
-		}
-		else {
-			/// Either get the module to make the component,
-			/// or use the default method for making the component
-			let cmpt = null;
-			if (fileMod.makeComponent) {
-				cmpt = fileMod.makeComponent(data);
+		if (!redirected) {
+			if (req.query.requestType == 'data') {
+				res.send(JSON.stringify(data));
 			}
 			else {
-				cmpt = new fileMod.component;
-				cmpt.make();
-				if (cmpt.$handleUpdate)  cmpt.$handleUpdate(data);
+
+
+				/// Either get the module to make the component,
+				/// or use the default method for making the component
+				let cmpt = null;
+				if (fileMod.makeComponent) {
+					cmpt = fileMod.makeComponent(data);
+				}
+				else {
+					cmpt = new fileMod.component;
+					cmpt.make(null, data);
+					if (cmpt.$handleUpdate)  cmpt.$handleUpdate(data);
+				}
+				let responseContent = null;
+				if (req.query.requestType == 'slice') {
+					responseContent = cmpt.root.outerHTML;
+				}
+				else {
+					console.log('user:', user);
+					req._page.$handleUpdate({body: cmpt.root, user});
+					responseContent = req._page.toHtml();
+				}
+				if (!redirected)  res.send(responseContent);
 			}
-			/// Embed it in the route/module's preferred template.
-			///   If string, lookup the 'pages' module.
-			///   Otherwise, assume it's a page class.
-			/// XXX: Should this be the route's preferred page template, or something else?
-			console.log('template:', fileMod.template);
-			let template = fileMod.template ? fileMod.template : 'StandardPage';
-			let page = typeof(template)=='string' ? new pages[template] : new template;
-			page.make();
-			page.$handleUpdate({body: cmpt.root});
-			res.send(page.toHtml());
 		}
 	};
-	app.get(publicPath, handler);
-	app.post(publicPath, handler);
+	let handlerWError = async(req,res) => {
+		try {
+			await handler(req,res);
+		}
+		catch (e) {
+			console.error(e.stack);
+		}
+	};
+	app.get(publicPath, handlerWError);
+	app.post(publicPath, handlerWError);
 	/*if (fileMod.post)  app.post(publicPath, async(req,res) => {
 		if (req.params.requestType == 'data') {
 			await fileMod.postData(req,res,db);
@@ -154,7 +241,10 @@ function handleFileReload(path) {
 			//console.log('path', path);
             // we have a file: load it
             let r = loadRoute(app, path);
-			if (r.updated) {
+			if (r.failed) {
+				console.log(`No component for ${path}`);
+			}
+			else if (r.updated) {
 				console.log(`Updated ${path}`);
 			}
 			else {

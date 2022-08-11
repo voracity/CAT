@@ -1,3 +1,4 @@
+var sqlite3 = require('sqlite3');
 var sqlite = require('sqlite');
 var passwordHash = require('password-hash');
 
@@ -8,7 +9,7 @@ class DbVersioning {
 	}
 	async init() {
 		if (!this.db) {
-			this.db = await sqlite.open(this.dbPath);
+			this.db = await sqlite.open({filename:this.dbPath, driver:sqlite3.Database});
 		}
 	}
 	async runStatements(statements) {
@@ -39,7 +40,7 @@ class DbVersioning {
 			else if (addedStatement) {
 				/// This is for versioning. Suggest putting ISO-ish date, but any string
 				/// higher than the previous string will do.
-				let newVersion = addedStatement[1];
+				newVersion = addedStatement[1];
 				let row = null;
 				try {
 					row = await this.db.get("select version from dbversion");
@@ -47,15 +48,15 @@ class DbVersioning {
 				catch (e) {
 					/// Table not defined, create it. (Well, maybe some other
 					/// error, but if there is, this will throw that error too.)
-					await this.db.exec("create table dbversion (version text)");
-					await this.db.exec("insert into dbversion (version) values ('')");
+					await this.db.run("create table dbversion (version text)");
+					await this.db.run("insert into dbversion (version) values ('')");
 					row = await this.db.get("select version from dbversion");
 				}
 			
-				if (!row || row.version < newVersion) {
+				if (!row.version || row.version < newVersion) {
 					if (prevVersion !== null) {
-						console.log("prevVersion:", prevVersion);
-						await this.db.exec("update dbversion set version = ?", prevVersion);
+						console.log("Previous version:", prevVersion);
+						await this.db.run("update dbversion set version = ?", prevVersion);
 					}
 					console.log("Updating to", newVersion);
 					running = true;
@@ -69,18 +70,19 @@ class DbVersioning {
 			else if (running) {
 				if (params) {
 					console.log(statement, params);
-					await this.db.exec(statement, ...params);
+					await this.db.run(statement, ...params);
 				}
 				else {
 					console.log(statement);
-					await this.db.exec(statement);
+					await this.db.run(statement);
 				}
 				totalRun++;
 			}
 		}
 				
 		if (bumpVersion) {
-			await this.db.exec("update dbversion set version = ?", newVersion);
+			//console.log('newVerison:', newVersion);
+			await this.db.run("update dbversion set version = ?", newVersion);
 		}
 		
 		return totalRun;
@@ -125,7 +127,18 @@ class CatVersioning extends DbVersioning {
 			"alter table bns add column suggestedCategory text",
 			"alter table bns add column screenshots text",
 			"alter table bns add column citationLink text",
+			
+			"ADDED 2021-08-26",
+			"create table user_sessions (id integer primary key not null, userId integer, sessionId text, lastModified datetime)",
+			"ADDED 2021-09-02",
+			"create table scenarios (id integer primary key not null, userId integer, bnId integer, name text, evidence json, roles json)",
+			"ADDED 2021-09-09",
+			"alter table scenarios add column selectedStates json",
+			
+			"ADDED 2022-03-29",
+			"alter table bns add column userId integer",
 			"START",
+			"alter table bns add column visibility text",
 		]);
 		
 		console.log(`Done. ${totalRun} statements run`);

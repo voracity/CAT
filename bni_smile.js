@@ -2,7 +2,7 @@
 /// updated promptly, the napi versions should be much more stable.
 var ffi = require('ffi-napi');
 var ref = require('ref-napi');
-var ArrayType = require('ref-array-napi');
+var ArrayType = require('ref-array-di')(ref);
 var fs = require('fs');
 
 var voidPtr = ref.refType(ref.types.void);
@@ -15,17 +15,28 @@ var voidPtr = ref.refType(ref.types.void);
 **/
 function pointerAsArray(ptr, type, size) {
 	//console.log('ptr', ptr, type.size, size, type.size*size);
+	//console.time('reint');
 	let buf = ref.reinterpret(ptr, type.size*size);
-	return ArrayType(type)(buf, size);
+	//console.timeEnd('reint');
+	//console.time('at');
+	if (type == ref.types.double) {
+		return new Float64Array(buf.buffer);
+	}
+	else if (type == ref.types.int) {
+		return new Int32Array(buf.buffer);
+	}
+	let at = ArrayType(type)(buf, size);
+	//console.timeEnd('at');
+	return at;
 }
 
-var g = ffi.Library('bismile64', {
+/*var g = ffi.Library('bismile64', {
 	'new_network': [voidPtr, []],
 	'copy_network': [voidPtr, [voidPtr]],
 	'delete_network': [voidPtr, [voidPtr]],
 	'UpdateBeliefs': [ref.types.void, [voidPtr]],
 	'ReadFile': [ref.types.void, [voidPtr, 'string']],
-	'AddNode': [ref.types.int, [voidPtr, 'int', 'string']],
+	'AddNode': ['int', [voidPtr, 'int', 'string']],
 	'DeleteNode': [ref.types.int, [voidPtr, 'int']],
 	'FindNode': ['int', [voidPtr, 'string']],
 	'GetNode': [voidPtr, [voidPtr, 'int']],
@@ -79,10 +90,110 @@ var g = ffi.Library('bismile64', {
 	'GetParents': [voidPtr, [voidPtr, 'int']],
 	'new_intArray': [voidPtr, []],
 	'GetAllNodes': ['void', [voidPtr, voidPtr]],
-	'AddArc': ['void', [voidPtr, 'int', 'int']],
+	'AddArc': ['int', [voidPtr, 'int', 'int']],
 	'RemoveArc': ['void', [voidPtr, 'int', 'int']],
 	'WriteFile': ['void', [voidPtr, 'string']],
+});*/
+
+var _definitions;
+var _g;
+var g = new Proxy({}, {
+	_definitions: _definitions = {
+		'new_network': [voidPtr, []],
+		'copy_network': [voidPtr, [voidPtr]],
+		'delete_network': [voidPtr, [voidPtr]],
+		'UpdateBeliefs': [ref.types.void, [voidPtr]],
+		'ReadFile': [ref.types.void, [voidPtr, 'string']],
+		'AddNode': ['int', [voidPtr, 'int', 'string']],
+		'DeleteNode': [ref.types.int, [voidPtr, 'int']],
+		'FindNode': ['int', [voidPtr, 'string']],
+		'GetNode': [voidPtr, [voidPtr, 'int']],
+		'node_Definition': [voidPtr, [voidPtr]],
+		'node_Value': [voidPtr, [voidPtr]],
+		'nodeValue_GetMatrix': [voidPtr, [voidPtr]],
+		'nodeDefinition_GetMatrix': [voidPtr, [voidPtr]],
+		'dMatrix_GetSize': ['int', [voidPtr]],
+		'dMatrix_GetItemsDouble': [ref.refType(ref.types.double), [voidPtr]],
+		'intArray_NumItems': ['int', [voidPtr]],
+		'intArray_Items': [ref.refType(ref.types.int), [voidPtr]],
+		'node_Info': [voidPtr, [voidPtr]],
+		'nodeInfo_Header': [voidPtr, [voidPtr]],
+		'nodeInfo_Screen': [voidPtr, [voidPtr]],
+		'screenInfo_position': [voidPtr, [voidPtr]],
+		'rectangle_center_X_set': ['void', [voidPtr, 'int']],
+		'rectangle_center_Y_set': ['void', [voidPtr, 'int']],
+		'rectangle_center_X': ['int', [voidPtr]],
+		'rectangle_center_Y': ['int', [voidPtr]],
+		'rectangle_width_set': ['void', [voidPtr, 'int']],
+		'rectangle_height_set': ['void', [voidPtr, 'int']],
+		'rectangle_width': ['int', [voidPtr]],
+		'rectangle_height': ['int', [voidPtr]],
+		'header_GetId': ['string', [voidPtr]],
+		'header_GetName': ['string', [voidPtr]],
+		'net_Header': [voidPtr, [voidPtr]],
+		'header_GetId': ['string', [voidPtr]],
+		'header_SetId': [voidPtr, [voidPtr, 'string']],
+		'header_GetName': ['string', [voidPtr]],
+		'header_SetName': [voidPtr, [voidPtr, 'string']],
+		'header_GetComment': ['string', [voidPtr]],
+		'header_SetComment': [voidPtr, [voidPtr, 'string']],
+		'nodeDefinition_GetNumberOfOutcomes': ['int', [voidPtr]],
+		'CalcProbEvidence': ['double', [voidPtr]],
+		'nodeValue_IsRealEvidence': ['int', [voidPtr]],
+		'nodeValue_GetEvidence': ['int', [voidPtr]],
+		'nodeValue_SetEvidence': ['void', [voidPtr, 'int']],
+		'nodeDefinition_GetOutcomesNames': [voidPtr, [voidPtr]],
+		'nodeDefinition_SetDoubleDefinition': ['void', [voidPtr, 'int', voidPtr]],
+		'stringArray_Items': [ref.refType(ref.types.CString), [voidPtr]],
+		'GetDefaultBNAlgorithm': ['int', [voidPtr]],
+		'SetDefaultBNAlgorithm': ['void', [voidPtr, 'int']],
+		'ClearAllEvidence': ['void', [voidPtr]],
+		'nodeValue_ClearEvidence': ['void', [voidPtr]],
+		'nodeValue_GetVirtualEvidence': [ref.refType(ref.types.double), [voidPtr]],
+		'nodeValue_SetVirtualEvidence': ['void', [voidPtr, 'int', voidPtr]],
+		'nodeDefinition_AddOutcome': ['void', [voidPtr, 'string']],
+		'nodeDefinition_SetNumberOfOutcomes': ['int', [voidPtr, 'int']],
+		'nodeDefinition_SetNumberOfOutcomesStr': ['int', [voidPtr, 'int', voidPtr]],
+		'nodeDefinition_RenameOutcomes': ['void', [voidPtr, 'int', voidPtr]],
+		'GetParents': [voidPtr, [voidPtr, 'int']],
+		'new_intArray': [voidPtr, []],
+		'GetAllNodes': ['void', [voidPtr, voidPtr]],
+		'AddArc': ['int', [voidPtr, 'int', 'int']],
+		'RemoveArc': ['void', [voidPtr, 'int', 'int']],
+		'WriteFile': ['void', [voidPtr, 'string']],
+	},
+	g: _g = (_=>{
+		try {
+			return ffi.Library('bismile64', Object.assign({},_definitions));
+		}
+		catch (e) {
+			return ffi.Library('./libbismile.so', Object.assign({},_definitions));
+		}
+	})(),
+	get(target, prop) {
+		if (!this._definitions[prop]) {
+			throw new Error(`"${prop}" function not defined for this API`);
+		}
+		return new Proxy(this.g[prop], {
+			apply: (target, thisArg, argList) => {
+				let argTypes = this._definitions[prop][1];
+				/*if (prop == 'AddNode') {
+					console.log('hello',argTypes, argList);
+				}*/
+				for (let i=0; i<argTypes.length; i++) {
+					if (['int','float','double','string'].includes(argTypes[i])
+							&& (typeof(argList[i])=='undefined' || typeof(argList[i])=='object')) {
+						//if (prop =='AddNode')console.log(argList[i], argTypes[i], typeof(argList[i]));
+						throw new Error(`Wrong type in "${prop}" for argument ${i}`);
+					}
+				}
+				return target.apply(thisArg, argList);
+			}
+		});
+	}
 });
+
+//g = _g;
 
 class Net {
 	constructor(fn = null) {
@@ -124,6 +235,7 @@ class Net {
 								// Convert to floats
 								let cpt = cptStrs.map(v => parseFloat(v));
 								// Update the in-memory CPT
+								console.log(currentNode);
 								this.node(currentNode).cpt1d(cpt);
 							}
 						}
@@ -267,6 +379,7 @@ class Net {
 		return this;
 	}
 
+	/// Be careful, because states is the 3rd arg.
 	addNode(name, nodeType = null, states = null) {
 		let node = null;
 		try {
@@ -326,7 +439,7 @@ class Net {
 		
 		let nodeId = g.FindNode(this.eNet, name);
 		if (nodeId == -2) {
-			return None;
+			return null;
 		}
 		this._nodeCache[name] = new Node(this, null, null, null, nodeId);
 		
@@ -363,19 +476,20 @@ class Net {
 		/// All node states have rolled back round to 0
 		return false;
 	}
-
+	
 	/// Get MI against all other nodes for (for now) a single node
 	mi(targetNode, o = {}) {
-		o.targetState = o.targetState === undefined ? null : o.targetState;
-		/// Node is test against everything else with the given state ('cos it's easier)
-		o.otherState = o.otherState === undefined ? null: o.otherState;
+		o.targetStates = !o.targetStates ? [] : o.targetStates;
+		o.otherStates = !o.otherStates ? {} : o.otherStates;
 		
 		let net = this;
-		//t = time.time()
+		//let savedAutoUpdate = net._autoUpdate;
+		//net._autoUpdate = false;
+		console.time('mi func');
 		
 		// Get marginals (with whatever current evidence is)
 		let marginals = {}
-		// print('a', time.time() - t)
+		console.timeLog('mi func');
 		//net.nodes()[0].states()[0].setTrueFinding();
 		//net.nodes()[0].retractFindings()
 		for (let node of net.nodes()) {
@@ -387,6 +501,7 @@ class Net {
 		// Store all node beliefs for every different state in target
 		let beliefsByTargetState = []
 		// print('b', time.time() - t)
+		console.timeLog('mi func');
 		//onsole.log({findings: net.findings()});
 		for (let state of targetNode.states()) {
 			state.setTrueFinding()
@@ -406,27 +521,32 @@ class Net {
 		}
 		//onsole.log(JSON.stringify({beliefsByTargetState},null,'\t'));
 		// print('c', time.time() - t)
+		console.timeLog('mi func');
 		targetNode.retractFindings()
 		
 		// Now, calculate the MI table
 		let miTable = []
 		let targetMarginals = marginals[targetNode.name()]
 		let targetCondProbs = {}
+		let targetStateNums = new Set(o.targetStates.map(s => targetNode.state(s).stateNum));
 		for (let node of net.nodes()) {
 			// joint * log ( joint / marginals)
 			// For each prob in target marginal
 			let total = 0
 			targetCondProbs[node.name()] = node.states().map(s => targetNode.states().map(_=>0))
+			//console.log('otherstates:',o.otherStates);
+			let otherStates = o.otherStates[node.name()] || [];
+			let otherStateNums = new Set(otherStates.map(s => node.state(s).stateNum));
 			for (let [i,targetMarginalProb] of targetMarginals.entries()) {
 				/// Skip targetState if not matching
 				//onsole.log('stsinm', o.targetState, targetNode.state(i).name());
-				if (o.targetState !== null && targetNode.state(i).stateNum !== targetNode.state(o.targetState).stateNum)  continue;
+				if (targetStateNums.size && !targetStateNums.has(targetNode.state(i).stateNum))  continue;
 				let nodeMarginal = marginals[node.name()]
 				// And each prob in both marginal and conditional node beliefs
 				for (let [j,nodeProb] of beliefsByTargetState[i][node.name()].entries()) {
 					/// Skip otherState if not matching
 					//onsole.log('soinm', o.otherState, node.state(j).name());
-					if (o.otherState !== null && node.state(j).stateNum !== node.state(o.otherState).stateNum)  continue;
+					if (otherStateNums.size && !otherStateNums.has(node.state(j).stateNum))  continue;
 					let jointProb = targetMarginalProb*nodeProb
 					let nodeMarginalProb = nodeMarginal[j]
 					let targetCondProb;
@@ -448,8 +568,12 @@ class Net {
 			/// Need to be asymmetric to support Causal MI
 			/// We assume the target is the effect, hence others are the cause
 			/// Then we divide it out, because it was in the joint, and shouldn't have been there for these cases
-			if (o.otherState !== null) {
-				total /= marginals[node.name()][node.state(o.otherState).stateNum];
+			let margSum = 0;
+			for (let otherStateNum of otherStateNums) {
+				margSum += marginals[node.name()][otherStateNum];
+			}
+			if (margSum) {
+				total /= margSum;
 			}
 			
 			let minExpRank = 10000000
@@ -470,6 +594,9 @@ class Net {
 			}
 			miTable.push([node.name(), total, maxExpRank-minExpRank, minExpRankJ, maxExpRankJ])
 		}
+		console.timeEnd('mi func');
+		
+		//net._autoUpdate = savedAutoUpdate;
 		
 		//onsole.log(miTable);
 		
@@ -510,6 +637,8 @@ class Node {
 		}
 
 		if (states) {
+			//let nodeDef = this._gNodeDef();
+			//console.log(nodeDef);
 			g.nodeDefinition_SetNumberOfOutcomes(this._gNodeDef(), states.length);
 			//console.log(this.states());
 			this.renameStates(states);
@@ -632,7 +761,9 @@ class Node {
 			if (typeof(parent)=='string') {
 				parent = this.net.node(parent);
 			}
+			console.log(parent.eId, this.eId);
 			g.AddArc(this.net.eNet, parent.eId, this.eId);
+			console.log('x');
 		}
 
 		/// Chain
@@ -852,11 +983,23 @@ class Node {
 			let numItems = g.dMatrix_GetSize(nodeMat);
 
 			let cptDbl = [];
-			let dbArr = pointerAsArray(g.dMatrix_GetItemsDouble(nodeMat), ref.types.double, numItems);
+			//console.time('ptr');
+			/*let dbArr = pointerAsArray(g.dMatrix_GetItemsDouble(nodeMat), ref.types.double, numItems);
 
 			for (let i=0; i<numItems; i++) {
 				cptDbl.push(dbArr[i]);
+			}*/
+			
+			let ptr = g.dMatrix_GetItemsDouble(nodeMat);
+			//console.log(ptr, ptr.length);
+			let buf = ref.reinterpret(ptr, ref.types.double.size*numItems);
+			let nums = new Float64Array(buf.buffer);
+			/*console.log(buf, buf.length, );
+			console.log(Array.isArray(buf));*/
+			for (let i=0; i<numItems; i++) {
+				cptDbl.push(nums[i]);
 			}
+			//console.timeEnd('ptr');
 
 			return cptDbl;
 		}
@@ -866,6 +1009,8 @@ class Node {
 
 			let totalParams = newCpt.length;
 			let rows = Math.floor(totalParams/numStates);
+			
+			newCpt =  new Float64Array(newCpt);
 
 			// Normalisation
 			for (let r=0; r<rows.length; r++) {
@@ -878,8 +1023,8 @@ class Node {
 				}
 			}
 
-			let newCptData = ArrayType(ref.types.double, newCpt.length)(newCpt, newCpt.length);
-			g.nodeDefinition_SetDoubleDefinition(nodeDef, newCpt.length, newCptData.buffer);
+			//let newCptData = ArrayType(ref.types.double, newCpt.length)(newCpt, newCpt.length);
+			g.nodeDefinition_SetDoubleDefinition(nodeDef, newCpt.length, newCpt);
 			this.net.needsUpdate = true;
 		}
 
@@ -956,6 +1101,12 @@ class Node {
 			return [g.rectangle_width(position), g.rectangle_height(position)];
 		}
 		return this;
+	}
+	
+	/// Get entropy
+	entropy() {
+		let bel = this.beliefs();
+		return bel.map(p => -p*Math.log2(p)).reduce((a,v)=>a+v);
 	}
 }
 

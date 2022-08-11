@@ -16,15 +16,20 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "bcrypt": "^5.0.1",
     "chokidar": "^3.3.1",
+    "cookie-parser": "^1.4.5",
     "express": "^4.17.1",
-    "ffi-napi": "^2.4.5",
+    "express-fileupload": "^1.2.1",
+    "ffi-napi": "^2.5.0",
     "htm": "file:local/htm",
     "jsdom": "^16.0.0",
     "password-hash": "^1.2.2",
-    "ref-array-napi": "^1.2.1",
-    "ref-napi": "^1.4.2",
+    "ref-array-di": "^1.2.2",
+    "ref-array-napi": "^1.2.2",
+    "ref-napi": "^1.5.2",
     "siteUtils": "file:local/siteUtils",
-    "sqlite": "^3.0.3"
+    "sqlite": "^4.0.25",
+    "sqlite3": "^5.0.2"
   }
 }

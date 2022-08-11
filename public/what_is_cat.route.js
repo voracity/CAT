@@ -12,4 +12,5 @@ class WhatIsCat {
 module.exports = {
 	template: 'StandardPage',
 	component: WhatIsCat,
+	noUserRequired: true,
 }

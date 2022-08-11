@@ -1,62 +1,170 @@
-html, body { margin: 0; padding: 0; }
+:root {
+	--cause-color: rgb(168,206,151);
+	--effect-color: rgb(140,161,216);
+	--cause-text: rgb(80,125,60);
+	--effect-text: rgb(48,73,141);
+	--back-color1: #868B8E;
+	--back-textcolor1: white;
+	--back-color2: #B9B7BD;
+	--back-textcolor2: black;
+	--back-color3: #eeede7;
+	--back-textcolor3: black;
+	--back-color4: #E7D2CC;
+	--back-textcolor4: black;
+	--bar-color: var(--back-color2);
+}
+
+* { box-sizing: border-box; min-height: 0; min-width: 0; }
+
+@font-face { font-family: 'roboto'; src: url(/_/css/fonts/Roboto-Regular.ttf); }
+
+html { height: 100%; }
+html, body { margin: 0; padding: 0; font-family: 'roboto'; }
+
+body { max-width: 1600px; margin: auto; }
 
 a { text-decoration: none; }
 
-.header { font-size: 20pt; padding: 20px 10px; border-bottom: solid 1px #555; }
+h1 a { display: contents; }
+
+h1 .logo { height: 110%; margin-right: 20px; margin-left: 20px; transition: filter 0.3s; }
+h1 .logo:hover { filter: drop-shadow(3px 3px 3px #aaaa); }
+
+h2 { margin: 0; margin-bottom: 0.5em; }
+
+.header { font-size: 24px; padding: 20px 10px; border-bottom: solid 1px #555; height: 132px;
+	/*background: url(/_/images/cat_logo.png) no-repeat left 15px center/auto 75%;*/ display: flex; }
+.header h1 { margin: 0; /*margin-left: 130px;*/ display: flex; align-items: center; }
+.siteLinks { position: absolute; right: 15px; top: 10px; }
 .content { padding: 10px; }
+
+.message { position: fixed; left: 50%; top: 0; margin: auto; text-align: center; padding: 10px; background: var(--back-color4); }
+
+.sideBar > .box { background: var(--back-color2); color: var(--back-textcolor2); padding: 10px; font-size: 0.8em; border: solid 1px #777; }
+.sideBar > .box:nth-child(2n) { background: var(--back-color3); color: var(--back-textcolor3); }
 
 .cbi { color: rgb(128,128,0); }
 
-.box { border: solid 1px #ccc; min-width: 10em; max-width: 40em; margin: auto; padding: 5px; }
-.box h2 { margin: 0; padding: 5px; margin: 0 -5px; }
+.box { border: solid 1px #ccc; min-width: 10em; max-width: 40em; padding: 5px; }
+.box > h2, .box > a > h2 { /*margin: 0; padding: 5px; margin: 0 -5px;*/ }
 .box .controls { text-align: right; }
-.box + .box { margin-top: 10px; }
+.box + .box { margin-top: 20px; }
 
-.uploadChoice { display: flex; height: 10em; align-items: center; }
+.uploadChoice { display: flex; height: 10em; align-items: center; margin: 8px 0; }
 .uploadChoice > * { flex: 1; text-align: center; }
 .uploadChoice .divider { flex: unset; width: 1px; height: 100%; display: flex; border-left: solid 1px #ccc; align-items: center; }
 .uploadChoice .divider span { margin-left: -15px; display: block; min-width: 30px; text-align: center; }
 
-.cbn .fields .field { margin-bottom: 5px; }
-.cbn .fields label { display: inline-block; width: 6em; }
+.form { display: grid; grid-template-columns: auto 1fr; max-width: 30em; }
+.form .field { display: contents; }
+
+.userLogin .register.form, .userLogin .login.form { display: none; }
+.userLogin .form.active { display: grid; }
 
 .bnView { position: relative; }
-.node { position: absolute; border: solid 1px black; padding: 4px; z-index: 10; background: white; }
-.node h3 { margin: 0; font-size: 11pt; border-bottom: solid 1px black; margin: -4px -4px 0 -4px; padding: 0 4px; }
+.node { position: absolute; border: solid 1px black; padding: 4px; z-index: 10; background: #fff7e9; user-select: none; }
+.node h3 { margin: 0; font-size: 10pt; border-bottom: solid 1px black; margin: -4px -4px 0 -4px; padding: 1px 4px; cursor: grab; }
+.node.moving h3, .node.moving { cursor: grabbing; }
+.node.moving { box-shadow: 3px 3px 4px #4444; margin: -2px 0 0 -2px; }
 
-.node .states { display: grid; grid-template-columns: auto auto auto auto; grid-gap: 0 3px; }
-.node .state { font-size: 10pt; display: contents; cursor: pointer; }
-.node .barParent { width: 60px; position: relative; }
+.node .states { display: grid; grid-template-columns: auto auto auto auto; grid-gap: 0 3px;
+	align-items: center; margin-top: 0px; margin-bottom: -4px; }
+.node .state > * { min-width: fit-content; }
+.node .state .target { min-width: 0; }
+.node .state { font-size: 9pt; display: contents; cursor: pointer; }
+.node .prob { text-align: right; padding-left: 0.5em; }
+.node .barParent { width: 60px; position: relative; height: 100%; border-left: solid 1px black;
+	display: flex; align-items: center; margin: -1px 0; }
 .node .bar { display: inline-block; background: black; height: 1em; transition: width 0.3s; }
 .node .controls { position: absolute; padding: 0; margin: -4px -4px 0 -4px; bottom: 100%; text-align: right; width: 100%; }
 .node .controls a { color: #777; font-size: 10pt; }
 /** This is ... bad. Still leaves grid-gap. For now, will leave, but maybe replace with table! **/
-.node .target { width: 0; overflow: hidden; }
+.node .target { width: 0; overflow: hidden; transition: width 0.2s; }
+
+/*:is(.arc, .head, .triangle, .line, .bar){ transition: transform 0.1s, transform-origin 0.1s, d 0.1s, opacity 0.1s; }
+.hasMoving :is(.arc, .head, .triangle, .line, .bar){ transition: none; }*/
 
 .node.hasEvidence { background: #eee; }
-.node[data-role="cause"] { background: rgb(168,206,151); }
-.node[data-role="effect"] { background: rgb(140,161,216); }
-.node[data-role] .target { width: unset; overflow: unset; }
+.node[data-role="cause"] { background: var(--cause-color); }
+.node[data-role="effect"] { background: var(--effect-color); }
+.node[data-role] .target { width: 20px; overflow: unset; }
+/** Probably should just be for setCause/setEffect **/
+.node .controls a { padding: 1px 4px; outline: none; display: inline-block; margin-bottom: 1px;
+	color: transparent; }
+.node:hover .controls a { color: #777; }
+.node .controls a.on.setCause { background: var(--cause-color); color: white; }
+.node .controls a.on.setEffect { background: var(--effect-color); color: white; }
 
 .node a.menu { font-weight: bold; font-size: 14pt; }
 
-.infoWindows { position: fixed; right: 10px; z-index: 10; }
+/** Dialogs **/
+.dialog { background: rgb(255,255,255); background: rgba(255,255,255,0.95);
+	border: solid 1px black; box-shadow: 2px 2px 2px #888; padding: 1.2em; min-width: 150px;
+	max-width: 80vw; }
+.dialog.page { width: 80%; height: 70%; }
+.dialog h2 { margin: 0; margin-bottom: 8px; }
+.dialog .controls { margin-top: 8px; text-align: right; display: block; }
+.veil { position: fixed; z-index: 1000; background: rgba(255,255,255,0.7); opacity: 0; top: 0; left: 0;
+	display: flex; width: 100vw; height: 100vh; justify-content: center; align-items: center;
+	transition: opacity 0.3s; }
 
-.infoWindow { border: solid 1px black; background: white; box-shadow: 1px 1px 1px #ccc; }
-.infoWindow h2 { margin: 0; font-size: 14pt; padding: 3px; border-bottom: solid 1px black;  }
+/** Temporary **/
+path[marker-end="url(#arrowheadBlocked)"] { opacity: 0.3; }
+
+.infoWindows { /*display: flex; flex-direction: column; align-items: end;*/ border-left: solid 1px black; background: var(--back-color3); height: 100%; overflow: auto;
+	font-size: 0.8em; }
+.infoWindows .tip { font-size: 8pt; margin-bottom: 1em; padding: 10px; }
+.infoWindows h2 { margin: 0; font-size: 1.2em; padding: 3px;  }
+.infoContent { background: white; border: solid 1px #ccc; border-left: none; border-right: none; }
 .infoWindow label { white-space: pre; }
-.infoWindow .info { padding: 5px; display: grid; grid-template-columns: min-content auto; grid-gap: 5px; }
+.infoWindow .info { padding: 5px; display: grid; grid-template-columns: min-content auto; grid-gap: 5px;}
 .infoWindow .field { display: contents; }
-.infoWindow .cause { color: rgb(80,125,60); }
-.infoWindow .effect { color: rgb(48,73,141); }
+.infoWindow .cause { color: var(--cause-text); display: block; }
+.infoWindow .effect { color: var(--effect-text); }
+.infoWindow .value { white-space: pre; }
+.infoWindow .value .extraInfo { margin-left: 0.5ex; }
+.loadingTable { clear: both; text-align: right; font-size: 0.8em; color: #777; }
 
 .ciTableWindow { margin-top: 10px; }
 .ciTableWindow .showTable { text-align: right; }
-.ciTable table { border: solid 1px #ccc; border-collapse: collapse; margin-top: 10px; float: right; }
-.ciTable th, .ciTable td { border: solid 1px #ccc; padding: 3px 6px; text-align: right; }
+.ciTable table { border-collapse: collapse; /*margin-top: 10px;*/ background: white; width: 100%; }
+.ciTable th, .ciTable td { padding: 3px 6px; text-align: right; }
+.ciTable th + th, .ciTable td + td { border-left: solid 1px #ccc; }
+.ciTable tr + tr th, .ciTable tr + tr td { border-top: solid 1px #ccc; }
 .ciTable td { width: 50px; }
+.ciTable .effect td:first-child { color: var(--effect-text); }
+.ciTable .cause td:first-child { color: var(--cause-text); }
 
-.percentBar { background: linear-gradient(to right, #fa1, 0%, #fa1 var(--percent-bar), white var(--percent-bar)) no-repeat;}
+.percentBar { background: linear-gradient(to right, var(--bar-color), 0%, var(--bar-color) var(--percent-bar), white var(--percent-bar)) no-repeat;}
 
 .node.filled { background: hsl(26,100%,var(--strength)); }
-.node.filled .strength { position: absolute; top: 100%; right: 0; font-size: 10pt; color: #777; }
+.node.filled .strength { position: absolute; top: 100%; right: 0; font-size: 8pt; color: #777;
+	background: rgba(255,255,255,0.5); margin-top: 1px; }
+
+.bnDetail .controls .scenario { width: 15em; }
+.bnDetail .controls .gap { width: 1em; display: inline-block; }
+
+.upload.box.dragover { background: var(--back-color1); color: var(--back-textcolor1); }
+.dragover * { pointer-events: none; }
+
+
+/** Main page **/
+.mainPage { display: grid; grid-template-columns: 20% 1fr; margin: 10px; grid-gap: 40px; }
+.noUser .myBns { display: none; }
+.noUser .myBns + .box { margin-top: 0; } /** hmm, need to add this, no way for css to notice display:none **/
+.cbnList { width: 100%; max-width: unset; border: none; }
+.cbnList > h2 { margin-bottom: 1.5em; }
+.cbnListContents { display: grid; grid-template-columns: 1fr 1fr; grid-gap: 40px; grid-auto-rows: 1fr; }
+.cbnListContents .cbn { height: 100%; margin: 0; padding: 20px; background: var(--back-color4); color: var(--back-textcolor4); border: solid 1px black; }
+.cbn .fields .field { margin-bottom: 5px; }
+.cbn .fields label { display: inline-block; width: 6em; }
+
+/** BN page **/
+.bnPage { display: flex; flex-direction: column; height: 100%; max-width: unset; }
+.bnPage .header { height: 80px; }
+.bnPage h1 .logo { margin: 0 10px 0 5px; height: 120%; }
+.bnPage .header h1 { /*margin-left: 80px;*/ font-size: 1.5em; }
+.bnPage .content { flex: 1; padding: 0; }
+.bnPage .bnDetail { display: grid; grid-template-columns: 1fr 22%; grid-template-rows: auto 1fr; height: 100%; }
+.bnPage .bnDetail > .controls { grid-column: 1 / span 2; padding: 8px; background: var(--back-color2); border-bottom: solid 1px black; }
+.bnPage .bnView { height: 100%; overflow: auto; }

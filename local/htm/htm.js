@@ -62,7 +62,7 @@
 			/// pass
 		}
 		/// This is far quicker than instanceof, though more prone to error
-		else if (arg.nodeType && arg.nodeName) {
+		else if (arg && arg.nodeType && arg.nodeName) {
 		//else if (arg instanceof Element || arg instanceof DocumentFragment) {
 			containerEl.appendChild(arg);
 		}
@@ -79,7 +79,7 @@
 			for (var attr in arg) {
 				var attrVal = arg[attr];
 				if (attr in node.hooks)  node.hooks[attr](el, attrVal, attr);
-				else if (attrVal===null) ;
+				else if (attrVal===null || attrVal===undefined) ;
 				else {
 					/// Convert mixedCase to mixed-case
 					attr = attr.replace(/[A-Z]/g, m => '-'+m.toLowerCase());
@@ -130,9 +130,80 @@
 		return range.extractContents();
 	}
 
+	/** This restores jquery like chaining --- but for any object at all! **/
+	function chain(o, opts = {}) {
+		let chainSym = Symbol('chain');
+		if (typeof(o)!='object' || o == null || o[chainSym])  return o;
+		let proxy = new Proxy(o, {get(target,prop,receiver,noCustomProps) {
+			let handler = this;
+			if (!noCustomProps) {
+				if (prop === 'my') {
+					return new Proxy(proxy, {get(_target,_prop) {
+						//onsole.log(target,_prop, prop);
+						return handler.get(target,_prop,receiver,true);
+					}});
+				}
+				else if (prop === 'root') {
+					return opts.root;
+				}
+				else if (prop === 'set') {
+					/** return function to set things **/
+					return (obj) => {
+						Object.assign(target, obj);
+						/// return the root of the chain (i.e. the original proxy)
+						return proxy;
+					};
+				}
+				/** I think .raw is better than unchain() **/
+				else if (prop === 'unchain') {
+					return _=> target;
+				}
+				else if (prop === 'raw') {
+					return target;
+				}
+				
+				/// More experimental:
+				else if (prop === 'forEach') {
+					return func => {
+						target.forEach((element,index,array) => func(chain(element, {root: opts.root}),index,array));
+						return proxy;
+					}
+				}
+			}
+			if (!(prop in target))  return undefined;
+			
+			if (typeof(target[prop])=='function') {
+				return (...args) => {
+					let val = target[prop](...args);
+					if (typeof(val)=='object' && val != null) {
+						return chain(val, {root: opts.root});
+					}
+					else if (val == null) {
+						return proxy;
+					}
+					else {
+						return val;
+					}
+				}
+			}
+			else if (typeof(target[prop])=='object' && target[prop] != null) {
+				return chain(target[prop], {root: opts.root});
+			}
+			else {
+				return target[prop];
+			}
+		}});
+		proxy[chainSym] = true;
+		opts.root ??= proxy;
+		return proxy;
+	}
+
 	global.node = node;
 	global.qnode = qnode;
 	global.n = n;
+	global.q = str => document.querySelector(str);
+	global.qa = str => [...document.querySelectorAll(str)];
 	global.toHtml = toHtml;
 	global.html = html;
+	global.chain = chain;
 })(typeof(window)!='undefined' ? window : exports);
