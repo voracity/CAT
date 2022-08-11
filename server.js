@@ -1,3 +1,63 @@
+/**
+	The main server file. This is responsible for routing HTTP/S requests to individual .route.js files,
+	as well as giving access to the main database and authentication.
+	
+	By default, it listens to changes to everything in public/. If you might change code anywhere,
+	you can use something like "pm2 start server.js --watch".
+	
+	The key function of this file is loadRoute(). The key part of loadRoute() is the handler(), which maps
+	HTTP/S calls to either .route.js methods, or component methods. Components can be defined anywhere, but
+	are generally defined locally within a .route.js file.
+
+	** Components **
+	Components can have the following parts:
+	
+	- new <Component>
+		- Creates a new instance of the component. A new component instance is created for each request to its
+		  associated path.
+	
+	- make()  [also make(rootEl, data)]     [REQUIRED]
+		- Makes the component's HTML structure. This is often called with no arguments, and the result stored in
+		  the given instance. Components that receive a |rootEl| should add their HTML structure to rootEl, rather than
+		  creating a new root. |data| from prepareData() can be used here if needed, but it is preferrable to use it
+		  in $handleUpdate() and only change the parts of the structure as required.
+	
+	- $handleUpdate(msg)
+		- Updates the HTML, according to the set of changes (or other information) described in |msg|. In general, $handleUpdate
+		  should be a set of condition -> action (if/then) blocks, that describe how the object changes in response to specific
+		  parts of the message. Components should be coded in such a way as to minimise the amount of change that occurs to the
+		  HTML --- though, in principle,  one could just re-generate the entire HTML structure each time.
+	
+	- toHtml()
+		- A very much optional method, that just makes the string version of the HTML. Currently useful in page components, so
+		  they can attach a doctype.
+	
+	
+	** .route.js files **
+	.route.js files map requests to components or other actions. .route.js files have the following properties/methods, all optional:
+	
+	- |template|
+		- Can be a:
+			- string: that specifies the name of a class in the pages.js file
+			- class: that defines the template itself
+			
+	- |component| or makeComponent()
+		- Either:
+			- |component|: A class that's defined with the methods described above
+			- makeComponent(): A function that returns a new component instance
+	
+	- |noUserRequired|
+		- Whether this route *requires* a logged in user. This is false by default (meaning pages require a user by default).
+	
+	- prepareData(req,res,db,appCache)
+		- Allows the .route.js file to fetch, prepare and return whatever data might be needed by its
+		  associated component. This data can then be directly merged into the component on either the
+		  server or the client. Note that returned data is sent to a component's $handleUpdate (as the msg),
+		  or to make().
+		  
+		  A .route.js might have no associated component, just this method (e.g. so as to return some JSON).
+	
+**/
 var express = require('express');
 var Net = require('./bni_smile').Net;
 var {n, toHtml} = require('htm');
@@ -31,12 +91,7 @@ app.use((err, req, res, next) => {
   res.status(500).send('Something broke!')
 })
 
-app.use('/public', (req,res,next) => {
-	if (req.url.match(/\.route\.js$/)) {
-		
-	}
-});
-/// Make everything but .route.js static
+/// Make everything but .route.js files static
 var statics = express.static('public');
 app.use((req,res,next) => {
 	if (!req.path.match(/\.route\.js$/))  return statics(req,res,next);
@@ -44,18 +99,14 @@ app.use((req,res,next) => {
 	return next();
 });
 
-app.get('/test', (req,res) => {
-	let net = new Net('bns/1-Asia.xdsl');
-	
-	let p = n('p', 'This!');
-	
-	res.send(`The beliefs ${p.outerHTML} for the lung node in the Asia model are: ${net.node('lung').beliefs().join(', ')}.`);
-});
-
+/// All components that are available on the server can be retrieved via this path
+/// TODO: Provide a way to retrieve just the required components
 app.get('/_/js/components.js', (req,res) => {
 	res.send(componentStore.map(c => c.toString()+'\n\n').join(''));
 });
 
+/// Load a component (e.g. a page) from |path|, assign it a route handler
+/// and put it in the component store
 function loadRoute(app, path) {
 	let result = {updated: false};
 	
@@ -179,7 +230,6 @@ function loadRoute(app, path) {
 			}
 			else {
 
-
 				/// Either get the module to make the component,
 				/// or use the default method for making the component
 				let cmpt = null;
@@ -226,6 +276,7 @@ function loadRoute(app, path) {
 	return result;
 }
 
+/// Reload a file/component in response to a file change on disk
 function handleFileReload(path) {
     fs.lstat(path, function(err, stat) {
         if (stat.isDirectory()) {
@@ -267,8 +318,5 @@ chokidar.watch('public', {awaitWriteFinish: {stabilityThreshold: 500}}).on('chan
 		}
 	}
 });
-
-//exports.module_holder = module_holder;
-// the usual server stuff goes here
 
 app.listen(port, () => console.log(`CAT is listening on ${port}...`));
