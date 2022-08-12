@@ -140,7 +140,11 @@ var measurePlugins = {
 				let cause = causes.length == 1 ? causes[0] : opts.jointCause;
 				selectedStates = selectedStates || {};
 				let table2, value, effectValue, percent;
-				if (selectedStates[cause] && selectedStates[effect]) {
+				let causeNumStates = net.node(cause).numberStates();
+				let effectNumStates = net.node(effect).numberStates();
+				if (selectedStates[cause] && selectedStates[effect]
+						&& selectedStates[cause].length != causeNumStates
+						&& selectedStates[effect].length != effectNumStates) {
 					/// Only singular states supported right now
 					/// XXX: Extend to support multiple states, by treating as merged states
 					let causeStateNums = selectedStates[cause].map(sel => net.node(cause).state(sel).stateNum);
@@ -211,7 +215,11 @@ var measurePlugins = {
 				let cause = causes.length == 1 ? causes[0] : opts.jointCause;
 				selectedStates = selectedStates || {};
 				let table2, value, effectValue, percent;
-				if (selectedStates[cause] && selectedStates[effect]) {
+				let causeNumStates = net.node(cause).numberStates();
+				let effectNumStates = net.node(effect).numberStates();
+				if (selectedStates[cause] && selectedStates[effect]
+						&& selectedStates[cause].length != causeNumStates
+						&& selectedStates[effect].length != effectNumStates) {
 					/// Only singular states supported right now
 					/// XXX: Extend to support multiple states, by treating as merged states
 					let causeStateNums = selectedStates[cause].map(sel => net.node(cause).state(sel).stateNum);
