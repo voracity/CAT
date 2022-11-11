@@ -84,7 +84,7 @@ function userBox() {
 	setTimeout(_=>{
 		document.body.addEventListener('click', event => {
 			c.style.display = 'none';
-		}, {once:true});
+		}, {once:true, capture: true});
 	}, 50);
 }
 

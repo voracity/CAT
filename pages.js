@@ -7,6 +7,7 @@ class StandardPage {
 			this.headEl = n('head',
 				n('link', {href: sitePath('/_/css/cat.css'), rel: 'stylesheet', type: 'text/css'}),
 				n('link', {href: sitePath('/_/js/menu/menu_styles.css'), rel: 'stylesheet', type: 'text/css'}),
+				n('link', {href: sitePath('/_/images/cat_logo.png'), rel: 'icon', type: 'image/png'}),
 				/*n('style', `
 					.cbi { color: rgb(128,0,0); }
 				`),*/
@@ -15,6 +16,7 @@ class StandardPage {
 				n('script', {src: sitePath('/_/js/utils.js')}),
 				n('script', {src: sitePath('/_/js/menu/menu.js')}),
 				n('script', {src: sitePath('/_/js/cat.js')}),
+				n('title', 'CAT: Causal Attribution Tool'),
 			),
 			n('body',
 				n('div.header',
@@ -37,8 +39,12 @@ class StandardPage {
 	toHtml() { return '<!doctype html>\n'+this.root.outerHTML; }
 	
 	$handleUpdate(m) {
+		let defaultTitle = 'CAT: Causal Attribution Tool';
 		if (m.body) {
 			this.contentEl.append(m.body);
+		}
+		if (m.title) {
+			this.root.querySelector('title').textContent = m.title;
 		}
 		if (m.user) {
 			chain(this.loginSection).set({innerHTML:''}).append(n('span.username', m.user.username, {onclick: 'userBox()'}));
@@ -51,6 +57,9 @@ class StandardPage {
 		}
 		if (m.h1) {
 			this.root.querySelector('.header h1 .text').textContent = m.h1;
+			if (this.root.querySelector('title').textContent == defaultTitle) {
+				this.root.querySelector('title').textContent = m.h1 + ' - CAT';
+			}
 		}
 	}
 }
@@ -59,7 +68,7 @@ class BnPage extends StandardPage {
 	make() {
 		super.make();
 		this.root.querySelector('body').classList.add('bnPage');
-		this.$handleUpdate({h1: 'BN PAGE'});
+		// this.$handleUpdate({h1: 'BN PAGE'});
 	}
 }
 

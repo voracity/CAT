@@ -12,8 +12,10 @@
 	--back-color4: #E7D2CC;
 	--back-textcolor4: black;
 	--bar-color: var(--back-color2);
+	--button-color: #9592a0;
+	--link-color: #da2727;
+	--link-hover-color: #e3670d;
 }
-
 * { box-sizing: border-box; min-height: 0; min-width: 0; }
 
 @font-face { font-family: 'roboto'; src: url(/_/css/fonts/Roboto-Regular.ttf); }
@@ -23,7 +25,8 @@ html, body { margin: 0; padding: 0; font-family: 'roboto'; }
 
 body { max-width: 1600px; margin: auto; }
 
-a { text-decoration: none; }
+a { text-decoration: none; color: var(--link-color); }
+a:hover { color: var(--link-hover-color); }
 
 h1 a { display: contents; }
 
@@ -31,6 +34,9 @@ h1 .logo { height: 110%; margin-right: 20px; margin-left: 20px; transition: filt
 h1 .logo:hover { filter: drop-shadow(3px 3px 3px #aaaa); }
 
 h2 { margin: 0; margin-bottom: 0.5em; }
+
+button { background: var(--button-color); border: none; color: white; padding: 4px 8px; border: solid 1px #444; }
+button { margin-left: 3px; }
 
 .header { font-size: 24px; padding: 20px 10px; border-bottom: solid 1px #555; height: 132px;
 	/*background: url(/_/images/cat_logo.png) no-repeat left 15px center/auto 75%;*/ display: flex; }
@@ -46,13 +52,13 @@ h2 { margin: 0; margin-bottom: 0.5em; }
 .cbi { color: rgb(128,128,0); }
 
 .box { border: solid 1px #ccc; min-width: 10em; max-width: 40em; padding: 5px; position: relative; }
-.box > h2, .box > a > h2 { /*margin: 0; padding: 5px; margin: 0 -5px;*/ }
+.box > h2, .box > a > h2 { /*margin: 0; padding: 5px; margin: 0 -5px;*/ color: black; }
 .box .controls { text-align: right; }
 .box + .box { margin-top: 20px; }
 
 .uploadChoice { display: flex; height: 10em; align-items: center; margin: 8px 0; }
 .uploadChoice > * { flex: 1; text-align: center; }
-.uploadChoice .divider { flex: unset; width: 1px; height: 100%; display: flex; border-left: solid 1px #ccc; align-items: center; }
+.uploadChoice .divider { flex: unset; width: 1px; height: 50%; display: flex; border-left: solid 1px #ccc; align-items: center; }
 .uploadChoice .divider span { margin-left: -15px; display: block; min-width: 30px; text-align: center; }
 
 .form { display: grid; grid-template-columns: auto 1fr; max-width: 30em; }
@@ -61,7 +67,7 @@ h2 { margin: 0; margin-bottom: 0.5em; }
 
 .userLogin .register.form, .userLogin .login.form { display: none; }
 .userLogin .form.active { display: grid; }
-.loginSection .username:hover { text-shadow: 2px 2px 2px #4444; cursor: pointer; }
+.loginSection .username:hover { color: var(--link-hover-color); cursor: pointer; }
 .userBox { display: none; background: white; border: solid 1px black; box-shadow: 2px 2px 2px #4444;
 	font-size: 12pt; }
 .userBox .item { padding: 4px 12px; white-space: nowrap; }
@@ -120,7 +126,7 @@ path[marker-end="url(#arrowheadBlocked)"] { opacity: 0.3; }
 
 .infoWindows { /*display: flex; flex-direction: column; align-items: end;*/ border-left: solid 1px black; background: var(--back-color3); height: 100%; overflow: auto;
 	font-size: 0.8em; }
-.infoWindows .tip { font-size: 8pt; margin-bottom: 1em; padding: 10px; }
+.infoWindows .tip, .infoContent.text { font-size: 8pt; margin-bottom: 1em; padding: 10px; }
 .infoWindows h2 { margin: 0; font-size: 1.2em; padding: 3px;  }
 .infoContent { background: white; border: solid 1px #ccc; border-left: none; border-right: none; }
 .infoWindow label { white-space: pre; }
@@ -148,7 +154,7 @@ path[marker-end="url(#arrowheadBlocked)"] { opacity: 0.3; }
 .node.filled .strength { position: absolute; top: 100%; right: 0; font-size: 8pt; color: #777;
 	background: rgba(255,255,255,0.8); margin-top: 1px; padding: 0 1px; border-radius: 5px; }
 
-.bnDetail .controls .scenario { width: 15em; }
+.bnDetail .controls .scenario { width: 15em; margin-left: 3px; }
 .bnDetail .controls .gap { width: 1em; display: inline-block; }
 
 .upload.box.dragover { background: var(--back-color1); color: var(--back-textcolor1); }

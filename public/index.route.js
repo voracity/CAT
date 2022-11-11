@@ -51,7 +51,7 @@ class CbnList {
 	
 	makeBnEntry(bn, o = {}) {
 		return n('div.cbn.box', {dataBnId: bn.id},
-			n('a', n('h2', {href: sitePath(`bn?id=${bn.id}`)}, bn.name)),
+			n('a', {href: sitePath(`bn?id=${bn.id}`)}, n('h2', bn.name)),
 			n('p.description', bn.description),
 			n('div.fields',
 				bn.author && n('div.field',   n('label', 'Author:'), n('span', bn.author),   ),

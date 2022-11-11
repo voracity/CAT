@@ -18,7 +18,7 @@ module.exports = {
 	noUserRequired: true,
 	async prepareData(req,res) {
 		let contents = await fs.readFile('public/what_is_cat_files/CATExplainerV2.html');
-		req._page.$handleUpdate({h1: "CAT: The Causal Attribution Tool"});
+		req._page.$handleUpdate({h1: "CAT: The Causal Attribution Tool", title: "What is CAT? - CAT"});
 		return {contents};
 	}
 }

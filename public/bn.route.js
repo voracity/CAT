@@ -136,6 +136,9 @@ class BnDetail {
 		if (m.visibility != null) {
 			this.root.querySelector('button.publish').style.display = m.visibility == 'public' ? 'none' : 'inline';
 		}
+		if (m.nosave === true) {
+			this.root.querySelector('button.save').style.display = 'none';
+		}
 	}
 }
 
@@ -248,6 +251,11 @@ module.exports = {
 					req._page.$handleUpdate({h1: (bn || {}).name || '(unsaved)'});
 				}
 				
+				let bnUserId = (await db.get('select userId from bns where id = ?', req.query.id)).userId;
+				if (bnUserId != userInfo?.userId) {
+					bn.nosave = true;
+				}
+				
 				/// Pull in the measure plugins. Only show active plugins.
 				let measures = Object.entries(measurePlugins).filter(([k,m]) => m.active).map(([k,m]) => k);
 				let calculateOpts = {jointCause: null};
@@ -280,6 +288,51 @@ module.exports = {
 						net.node(nodeName).finding(Number(stateI));
 						origNet.node(nodeName).finding(Number(stateI));
 					}
+					
+					/// Check if evidence is downstream of cause, effect, or both
+					function getEv(nodeNames) {
+						let hasEv = {};
+						for (let nodeName of nodeNames) {
+							let visited = {};
+							let toVisit = net.node(nodeName).children();
+							while (toVisit.length) {
+								let desc = toVisit.shift();
+								let descName = desc.name();
+								if (visited[descName])  continue;
+								visited[descName] = true;
+								
+								if (descName in evidence) {
+									hasEv[descName] = true;
+								}
+								
+								toVisit.push(...desc.children());
+							}
+						}
+						return hasEv;
+					}
+					let causeEv = getEv(roles?.cause || []);
+					let effectEv = getEv(roles?.effect || []);
+					let bothEv = {};
+					let neitherEv = {};
+					
+					for (let c in causeEv) {
+						if (c in effectEv) {
+							bothEv[c] = true;
+						}
+					}
+					for (let e in evidence) {
+						if (!(e in causeEv) && !(e in effectEv)) {
+							neitherEv[e] = true;
+						}
+					}
+					
+					bn.evLocation = {
+						causeEv,
+						effectEv,
+						bothEv,
+						neitherEv
+					};
+					console.log('evlocation', bn.evLocation);
 				}
 				
 				let selectedStates = null;

@@ -54,6 +54,8 @@ var bn = {
 				this.beliefs[node.name] = node.beliefs;
 			}
 			this.measureResults = reqData.measureResults;
+			/// Where is the evidence located, relative to cause/effect
+			this.evLocation = reqData.evLocation;
 			this.gui('Update');
 		})();
 		this.guiUpdateInfoWindows();
@@ -67,6 +69,7 @@ var bn = {
 		q('div.infoWindow')?.remove();
 		this.ciTableEnabled = !!this.roles?.effect?.length;
 		if (!this.ciTableEnabled)  q('div.ciTableWindow')?.remove();
+
 		console.log(this.roles?.cause?.length, this.roles?.effect?.length);
 		if (this.roles?.cause?.length && this.roles?.effect?.length) {
 			let causes = this.roles.cause;
@@ -99,6 +102,17 @@ var bn = {
 			
 		}
 		
+		q('.infoWindows .warning')?.remove();
+		if (this.evLocation?.bothEv && Object.keys(this.evLocation.bothEv).length) {
+			q('.infoWindows .tip')?.after?.(n('div.warning',
+				n('h2', 'Warning'),
+				n('div.infoContent.text',
+					`You are conditioning on evidence downstream of both cause and effect.
+					This will bias the estimates of causal effect (as a selection bias).`
+				),
+			));
+		}
+
 		if (this.roles?.effect?.length && !q('.ciTableWindow')) {
 			q('.infoWindows').append(
 				n('div.ciTableWindow',
@@ -137,6 +151,9 @@ var bn = {
 		q('.ciTable .loadingTable')?.remove();
 		let table = n('table', n('tr', ['Variable', 'MI', 'CI', '%'].map(s => n('th', s))));
 		for (let row of reqData.ciTable) {
+			let nodeEl = q(`.node[data-name="${row.cause}"]`);
+			/// Joint causes not handled yet (won't have corresponding node)
+			if (!nodeEl)  continue;
 			let rowClass = (this.roles?.cause ?? []).includes(row.cause) ? 'cause' :
 				row.cause == this.roles?.effect ? 'effect': '';
 			let roundedPercent = Math.round(row.percent*1000)/10;
@@ -146,7 +163,6 @@ var bn = {
 				n('td', Math.round(row.value*10000)/10000),
 				n('td.percentBar', {style: `--percent-bar: ${row.percent*100}%`}, roundedPercent),
 			));
-			let nodeEl = q(`.node[data-name="${row.cause}"]`);
 			nodeEl.style.setProperty('--strength', ((100 - row.percent*100)/2 + 50) + '%');
 			nodeEl.classList.add('filled');
 			nodeEl.querySelector('div.strength')?.remove();
@@ -402,7 +418,15 @@ function setupScenarioEvents() {
 		let name = '';
 		let sep = '';
 		for (let [k,v] of Object.entries(bn.evidence)) {
-			name += sep + `${k}=${v}`;
+			name += sep + `${k}=${bn.getNode(k).model.states[v]}`;
+			sep = ', ';
+		}
+		if (bn?.roles?.cause)  for (let c of bn.roles.cause) {
+			name += sep + `C:${c}`;
+			sep = ', ';
+		}
+		if (bn?.roles?.effect)  for (let e of bn.roles.effect) {
+			name += sep + `E:${e}`;
 			sep = ', ';
 		}
 		if (!name) { name = '(No evidence)'; }
@@ -429,12 +453,14 @@ function setupScenarioEvents() {
 		let qs = getQs();
 		let opt = scenarioBox.querySelector(`[value="${scenarioId}"]`);
 		let newName = prompt('New scenario name:', opt.text);
-		let upd = {name: newName};
-		fetch('/bn?renameScenario=1&requestType=data&id='+qs.id+'&scenarioId='+scenarioId, {method:'POST', body: JSON.stringify(upd), headers: {
-			'Accept': 'application/json',
-			'Content-Type': 'application/json',
-		}});
-		opt.text = newName;
+		if (newName) {
+			let upd = {name: newName};
+			fetch('/bn?renameScenario=1&requestType=data&id='+qs.id+'&scenarioId='+scenarioId, {method:'POST', body: JSON.stringify(upd), headers: {
+				'Accept': 'application/json',
+				'Content-Type': 'application/json',
+			}});
+			opt.text = newName;
+		}
 	});
 }
 
