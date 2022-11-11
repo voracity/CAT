@@ -415,7 +415,8 @@ class Net {
 		if (findings === null) {
 			findings = {}
 			for (let node of this.nodes()) {
-				findings[node.name()] = node.finding();
+				let f = node.finding();
+				if (f)  findings[node.name()] = f;
 			}
 			
 			return findings;

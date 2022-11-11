@@ -20,6 +20,7 @@ var bn = {
 			}
 		}
 	},
+	/// XXX: Fix: Return null, rather than create new if not present?
 	getNode(nodeName) {
 		if (!(nodeName in this.nodes)) {
 			this.nodes[nodeName] = new Node(this, nodeName);
@@ -140,7 +141,7 @@ var bn = {
 				row.cause == this.roles?.effect ? 'effect': '';
 			let roundedPercent = Math.round(row.percent*1000)/10;
 			table.append(n('tr', {class: rowClass},
-				n('td', row.cause),
+				n('td', bn.getNode(row.cause).model?.title ?? row.cause),
 				n('td', Math.round(row.mi*10000)/10000),
 				n('td', Math.round(row.value*10000)/10000),
 				n('td.percentBar', {style: `--percent-bar: ${row.percent*100}%`}, roundedPercent),

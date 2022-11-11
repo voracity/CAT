@@ -21,6 +21,10 @@ class StandardPage {
 					n('h1', n('a', {href: '/'}, n('img.logo', {src:'/_/images/cat_logo.png', alt: 'CAT logo'})), n('span.text', 'Causal Attribution Tool (beta)')),
 					n('div.siteLinks',
 						this.loginSection = n('span.loginSection', n('button.login', 'Login')),
+						n('div.userBox',
+							n('div.item', n('a', {href: '/'}, 'My Causal BNs')),
+							n('div.item', n('a', {href: '/login?logout=1'}, 'Logoff')),
+						),
 					),
 				),
 				this.contentEl = n('div.content',
@@ -37,7 +41,7 @@ class StandardPage {
 			this.contentEl.append(m.body);
 		}
 		if (m.user) {
-			chain(this.loginSection).set({innerHTML:''}).append(n('span.username', m.user.username));
+			chain(this.loginSection).set({innerHTML:''}).append(n('span.username', m.user.username, {onclick: 'userBox()'}));
 		}
 		if ('user' in m) {
 			console.log(m.user, m.user == null);

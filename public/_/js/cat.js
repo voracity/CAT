@@ -57,6 +57,37 @@ function changeUserLogin(type, el) {
 	}
 }
 
+function deleteBn(bnId) {
+	let bnName = q(`[data-bn-id="${bnId}"]`).querySelector('h2').textContent;
+	ui.popupDialog(n('div',
+		`Do you wish to delete "${bnName}"?`
+	), {buttons: [
+		n('button', 'Delete', {on:{click: doDelete}}),
+		n('button', 'Cancel', {on:{click: ui.dismissDialogs}}),
+	]});
+	async function doDelete() {
+		ui.dismissDialogs();
+		await fetch('/bn?requestType=data&'+new URLSearchParams({deleteBn:1,bnId}));
+		q(`[data-bn-id="${bnId}"]`).remove();
+	}
+}
+
+function userBox() {
+	let username = q('.loginSection .username').raw;
+	let c = q('.userBox').raw;
+	c.style.display = 'block';
+	c.style.position = 'fixed';
+	let b = c.getBoundingClientRect();
+	let userB = username.getBoundingClientRect();
+	c.style.top = (userB.top+userB.height)+'px';
+	c.style.left = (userB.left+userB.width-b.width)+'px';
+	setTimeout(_=>{
+		document.body.addEventListener('click', event => {
+			c.style.display = 'none';
+		}, {once:true});
+	}, 50);
+}
+
 var ui = {
 	/** Dialogs **/
 	popupDialog(content, opts) {

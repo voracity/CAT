@@ -5,7 +5,7 @@
 	--effect-text: rgb(48,73,141);
 	--back-color1: #868B8E;
 	--back-textcolor1: white;
-	--back-color2: #B9B7BD;
+	--back-color2: #d2d1d6;
 	--back-textcolor2: black;
 	--back-color3: #eeede7;
 	--back-textcolor3: black;
@@ -45,7 +45,7 @@ h2 { margin: 0; margin-bottom: 0.5em; }
 
 .cbi { color: rgb(128,128,0); }
 
-.box { border: solid 1px #ccc; min-width: 10em; max-width: 40em; padding: 5px; }
+.box { border: solid 1px #ccc; min-width: 10em; max-width: 40em; padding: 5px; position: relative; }
 .box > h2, .box > a > h2 { /*margin: 0; padding: 5px; margin: 0 -5px;*/ }
 .box .controls { text-align: right; }
 .box + .box { margin-top: 20px; }
@@ -57,9 +57,16 @@ h2 { margin: 0; margin-bottom: 0.5em; }
 
 .form { display: grid; grid-template-columns: auto 1fr; max-width: 30em; }
 .form .field { display: contents; }
+.form .controls { grid-column: 1 / -1; }
 
 .userLogin .register.form, .userLogin .login.form { display: none; }
 .userLogin .form.active { display: grid; }
+.loginSection .username:hover { text-shadow: 2px 2px 2px #4444; cursor: pointer; }
+.userBox { display: none; background: white; border: solid 1px black; box-shadow: 2px 2px 2px #4444;
+	font-size: 12pt; }
+.userBox .item { padding: 4px 12px; white-space: nowrap; }
+.userBox .item a { color: black; }
+.userBox .item:hover { background: #ddd; }
 
 .bnView { position: relative; }
 .node { position: absolute; border: solid 1px black; padding: 4px; z-index: 10; background: #fff7e9; user-select: none; }
@@ -139,7 +146,7 @@ path[marker-end="url(#arrowheadBlocked)"] { opacity: 0.3; }
 
 .node.filled { background: hsl(26,100%,var(--strength)); }
 .node.filled .strength { position: absolute; top: 100%; right: 0; font-size: 8pt; color: #777;
-	background: rgba(255,255,255,0.5); margin-top: 1px; }
+	background: rgba(255,255,255,0.8); margin-top: 1px; padding: 0 1px; border-radius: 5px; }
 
 .bnDetail .controls .scenario { width: 15em; }
 .bnDetail .controls .gap { width: 1em; display: inline-block; }
@@ -155,9 +162,23 @@ path[marker-end="url(#arrowheadBlocked)"] { opacity: 0.3; }
 .cbnList { width: 100%; max-width: unset; border: none; }
 .cbnList > h2 { margin-bottom: 1.5em; }
 .cbnListContents { display: grid; grid-template-columns: 1fr 1fr; grid-gap: 40px; grid-auto-rows: 1fr; }
-.cbnListContents .cbn { height: 100%; margin: 0; padding: 20px; background: var(--back-color4); color: var(--back-textcolor4); border: solid 1px black; }
-.cbn .fields .field { margin-bottom: 5px; }
+.cbnListContents .cbn { height: 100%; margin: 0; padding: 20px; background: var(--back-color4); color: var(--back-textcolor4); border: solid 1px black;
+	padding-bottom: 35px; }
+.cbn .fields { display: grid; grid-template-columns: 6em 1fr; }
+.cbn .fields .field { margin-bottom: 5px; display: contents; }
 .cbn .fields label { display: inline-block; width: 6em; }
+.cbn .controls { position: absolute; bottom: 15px; right: 15px; }
+
+/** What is CAT? page **/
+.whatIsCat { max-width: 60em; margin: auto; }
+.c35 { text-align: center; }
+:is(.c29,.c47) { border: solid 1px black; padding: 1em; background: var(--back-color2); }
+:is(.c29,.c47) p { margin: 0; }
+:is(.c29,.c47) p + p { margin-top: 1em; }
+.c25 { font-weight: bold; text-align: center; }
+.c17, .c10 { font-weight: bold; }
+.c9 { font-weight: bold; font-style: italic; }
+.c16 { color: #2671cc; }
 
 /** BN page **/
 .bnPage { display: flex; flex-direction: column; height: 100%; max-width: unset; }

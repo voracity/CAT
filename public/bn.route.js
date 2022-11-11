@@ -2,6 +2,7 @@ var {n, toHtml} = require('htm');
 var {sitePath, ...siteUtils} = require('siteUtils');
 var {Net, Node} = require('../bni_smile');
 var fs = require('fs');
+var measurePlugins = require('./measurePlugins');
 
 function addJointChild(net, parentNames, tempNodeName = null) {
 	let stateList = [];
@@ -29,249 +30,6 @@ function pick(obj, keys) {
 	}
 	return newObj;
 }
-
-var measurePlugins = {
-	do: {
-		calculate(nets, roles, selectedStates) {
-			return 0;
-		}
-	},
-	ci: {
-		calculate(nets, roles, selectedStates, opts = {}) {
-			selectedStates = selectedStates || {};
-			opts.jointCause = opts.jointCause || null;
-			console.log("ci sel", selectedStates);
-			let net = nets.interventionNet;
-			let causes = roles && roles.cause && roles.cause.length && roles.cause;
-			let effect = roles && roles.effect && roles.effect.length && roles.effect[0];
-			console.log("HERE IS CAUSES EFFECT:", causes, effect);
-			if (causes && effect) {
-				console.time('CI');
-				let tempNodeName = null;
-				/// XXX: To implement
-				/// If there is more than 1 cause, then add a temporary child node
-				/// to all cause nodes, and then use that (plus the effect node) to compute the mutual
-				/// information, with just 2 inferences (but 1 compile with a potentially huge node!) as per the current method
-				let cause = causes[0];
-				if (causes.length > 1) {
-					/*let stateList = [];
-					let stateIndexes = causes.map(_=>0);
-					do {
-						stateList.push('s'+stateIndexes.join('_'));
-					} while (Net.nextCombination(stateIndexes, causes.map(c => net.node(c))));
-					/// XXX: Add support to bni_smile for deterministic nodes
-					tempNodeName = 's'+String(Math.random()).slice(2);
-					console.log('IDENTITY',stateList.map((_,i)=>stateList.map((_,j)=> i==j ? 1 : 0)));
-					net
-						.addNode(tempNodeName, null, stateList)
-						.addParents(causes)
-						/// Essentially, create an identity matrix for now (later, replace with det node)
-						.cpt(stateList.map((_,i)=>stateList.map((_,j)=> i==j ? 1 : 0)));
-					cause = tempNodeName;*/
-					cause = opts.jointCause;
-				}
-				//console.log('XXX1');
-				console.time('MI');
-				//net.mi(net.node(effect));
-				console.timeLog('MI');
-				//console.log('XXX2');
-				//net.mi(net.node(effect));
-				console.timeEnd('MI');
-				//let table2 = net.mi(net.node(effect));
-				let table = net.mi(net.node(effect) , {
-					targetStates: selectedStates[effect],
-					otherStates: {[cause]: selectedStates[cause]},
-				});
-				console.log('picked:', selectedStates[cause]);
-				//console.log('node:',cause);
-				//console.log('x', table, net.node(cause).beliefs());
-				let value = table.find(row => row[0] == cause)[1];
-				//let effectValue = table2.find(row => row[0] == effect)[1];
-				/// 2 ways to compute %:
-				/// - against the entropy of the effect in the cut network
-				/// - against the maximum possible entropy of the effect
-				let numStates = net.node(effect).numberStates();
-				let unif = 1/numStates;
-				// let effectValue = net.node(effect).entropy();
-				let effectValue = -unif*Math.log2(unif)*numStates;
-				let percent = value/effectValue;
-				
-				//if (tempNodeName)  net.node(tempNodeName).delete();
-				
-				console.timeEnd('CI');
-				return {value, percent, _effectValue: effectValue, title: 'Causal information'};
-			}
-			
-			return null;
-		}
-	},
-	mi: {
-		calculate(nets, roles, selectedStates, opts = {}) {
-			opts.jointCause = opts.jointCause || null;
-			let net = nets.originalNet;
-			let causes = roles && roles.cause && roles.cause.length && roles.cause;
-			let effect = roles && roles.effect && roles.effect.length && roles.effect[0];
-			if (causes && effect) {
-				let cause = causes.length == 1 ? causes[0] : opts.jointCause;
-				let table = net.mi(net.node(effect), {
-					targetStates: selectedStates[effect],
-					otherStates: {[cause]: selectedStates[cause]},
-				});
-				let table2 = net.mi(net.node(effect));
-				let value = table.find(row => row[0] == cause)[1];
-				let effectValue = table2.find(row => row[0] == effect)[1];
-				let percent = value/effectValue;
-				return {value, percent, _effectValue: effectValue, title: 'Mutual information'};
-			}
-			
-			return null;
-		}
-	},
-	/* Modifications:\n- Arc cutting\n- n-ary cause nodes are treated as binary with respect to "focus" states\n- Paths through other parents are left as they are */
-	cheng: {
-		calculate(nets, roles, selectedStates, opts = {}) {
-			console.log('CHENG')
-			let net = nets.interventionNet;
-			let causes = roles && roles.cause && roles.cause.length && roles.cause;
-			let effect = roles && roles.effect && roles.effect.length && roles.effect[0];
-			let preventative = false;
-			if (causes && effect) {
-				console.log('CHENG2');
-				let cause = causes.length == 1 ? causes[0] : opts.jointCause;
-				selectedStates = selectedStates || {};
-				let table2, value, effectValue, percent;
-				let causeNumStates = net.node(cause).numberStates();
-				let effectNumStates = net.node(effect).numberStates();
-				if (selectedStates[cause] && selectedStates[effect]
-						&& selectedStates[cause].length != causeNumStates
-						&& selectedStates[effect].length != effectNumStates) {
-					/// Only singular states supported right now
-					/// XXX: Extend to support multiple states, by treating as merged states
-					let causeStateNums = selectedStates[cause].map(sel => net.node(cause).state(sel).stateNum);
-					let effectStateNums = selectedStates[effect].map(sel => net.node(effect).state(sel).stateNum);
-					//let e = net.node(effect).state(selectedStates[effect][0]).stateNum;
-					console.log('cheng',cause, effect, selectedStates, causeStateNums, effectStateNums);
-					
-					let origBeliefs = net.node(effect).beliefs();
-					let savedCauseFinding = net.node(cause).finding();
-					
-					/// Turn off everything other than the selectedStates
-					let numStates = net.node(cause).states().length;
-					let likelihoods = Array(numStates).fill(0);
-					causeStateNums.forEach(i => likelihoods[i] = 1);
-					//let likelihoods = Array.from({length: numStates}, (_,i) => Number(causeStateNums.includes(i)));
-					net.node(cause).likelihoods(likelihoods);
-					//net.node(cause).finding(c);
-					let cBeliefs = net.node(effect).beliefs();
-					
-					net.node(cause).retractFindings();
-					net.node(cause).likelihoods(likelihoods.map(v => 1-v));
-					let notCBeliefs = net.node(effect).beliefs();
-					
-					net.node(cause).retractFindings();
-					if (savedCauseFinding) {
-						console.log(savedCauseFinding);
-						net.node(cause).finding(savedCauseFinding);
-					}
-					
-					console.log(origBeliefs, cBeliefs, notCBeliefs);
-					let cBelief = effectStateNums.map(e => cBeliefs[e]).reduce((a,v)=>a+v);
-					let notCBelief = effectStateNums.map(e => notCBeliefs[e]).reduce((a,v)=>a+v);
-					
-					let deltaBelief =  cBelief - notCBelief;
-					
-					let causalPower = null;
-					if (deltaBelief >= 0) {
-						/// Equation 8 from Cheng 1997
-						causalPower = deltaBelief/(1 - notCBelief);
-					}
-					else {
-						/// Equation 14 from Cheng 1997
-						causalPower = -deltaBelief/notCBelief;
-						preventative = true;
-					}
-					
-					value = causalPower;
-				}
-				else {
-					value = '-';
-				}
-				return {value, title: 'Cheng', tooltip: 'Cheng\'s causal power. See the CAT Explainer for a description.', extraInfo: preventative ? '(preventative)' : ''};
-			}
-			
-			return null;
-		}
-	},
-	/* Modifications:\n- Arc cutting\n- n-ary cause nodes are treated as binary with respect to "focus" states\n- Paths through other parents are left as they are*/
-	far: {
-		calculate(nets, roles, selectedStates, opts = {}) {
-			console.log('FAR')
-			let net = nets.interventionNet;
-			let causes = roles && roles.cause && roles.cause.length && roles.cause;
-			let effect = roles && roles.effect && roles.effect.length && roles.effect[0];
-			let preventative = false;
-			if (causes && effect) {
-				console.log('FAR2');
-				let cause = causes.length == 1 ? causes[0] : opts.jointCause;
-				selectedStates = selectedStates || {};
-				let table2, value, effectValue, percent;
-				let causeNumStates = net.node(cause).numberStates();
-				let effectNumStates = net.node(effect).numberStates();
-				if (selectedStates[cause] && selectedStates[effect]
-						&& selectedStates[cause].length != causeNumStates
-						&& selectedStates[effect].length != effectNumStates) {
-					/// Only singular states supported right now
-					/// XXX: Extend to support multiple states, by treating as merged states
-					let causeStateNums = selectedStates[cause].map(sel => net.node(cause).state(sel).stateNum);
-					let effectStateNums = selectedStates[effect].map(sel => net.node(effect).state(sel).stateNum);
-					//let e = net.node(effect).state(selectedStates[effect][0]).stateNum;
-					console.log('FAR3',cause, effect, selectedStates, causeStateNums, effectStateNums);
-					
-					let origBeliefs = net.node(effect).beliefs();
-					let savedCauseFinding = net.node(cause).finding();
-					
-					/// Turn off everything other than the selectedStates
-					let numStates = net.node(cause).states().length;
-					let likelihoods = Array(numStates).fill(0);
-					causeStateNums.forEach(i => likelihoods[i] = 1);
-					//let likelihoods = Array.from({length: numStates}, (_,i) => Number(causeStateNums.includes(i)));
-					net.node(cause).likelihoods(likelihoods);
-					//net.node(cause).finding(c);
-					let cBeliefs = net.node(effect).beliefs();
-					
-					net.node(cause).retractFindings();
-					net.node(cause).likelihoods(likelihoods.map(v => 1-v));
-					let notCBeliefs = net.node(effect).beliefs();
-					
-					net.node(cause).retractFindings();
-					if (savedCauseFinding) {
-						console.log(savedCauseFinding);
-						net.node(cause).finding(savedCauseFinding);
-					}
-					
-					console.log(origBeliefs, cBeliefs, notCBeliefs);
-					let cBelief = effectStateNums.map(e => cBeliefs[e]).reduce((a,v)=>a+v);
-					let notCBelief = effectStateNums.map(e => notCBeliefs[e]).reduce((a,v)=>a+v);
-					
-					let far = 1 - notCBelief/cBelief;
-					
-					if (far < 0) {
-						far = (1 - cBelief/notCBelief);
-						preventative = true;
-					}
-					
-					value = far;
-				}
-				else {
-					value = '-';
-				}
-				return {value, title: 'FAR', tooltip: 'Fraction of Attributable Risk. See the CAT Explainer for a description.', extraInfo: preventative ? '(preventative)' : ''};
-			}
-			
-			return null;
-		},
-	},
-};
 
 class BnDetail {
 	make(root) {
@@ -334,7 +92,7 @@ class BnDetail {
 					n('a.setEffect', {href: 'javascript:void(0)'}, 'E'),
 					//n('a.menu', {href: 'javascript:void(0)'}, '\u22EF'),
 				),
-				n('h3', node.name),
+				n('h3', node.title ?? node.name),
 				n('div.states',
 					node.states.map((s,i) => n('div.state',
 						{dataIndex: i},
@@ -398,6 +156,20 @@ module.exports = {
 		}
 		else if (req.query.renameScenario) {
 			await db.run('update scenarios set name = ? where userId = ? and id = ?', req.body.name, userInfo.userId, req.query.scenarioId);
+		}
+		else if (req.query.deleteBn) {
+			console.log('Deleting');
+			let bnUserId = await db.get('select userId from bns where id = ?', req.query.bnId);
+			bnUserId = bnUserId.userId;
+			console.log(bnUserId, userInfo.userId);
+			if (String(bnUserId) === String(userInfo.userId)) {
+				/// OK, can delete
+				db.run('delete from bns where id = ?', req.query.bnId);
+				/// XXX: Need to delete BN file too
+			}
+			else {
+				console.log(`Can't delete. User doesn't own BN.`);
+			}
 		}
 		else if (req.query.updateBn) {
 			console.log('UPDATING');
@@ -476,7 +248,8 @@ module.exports = {
 					req._page.$handleUpdate({h1: (bn || {}).name || '(unsaved)'});
 				}
 				
-				let measures = ['ci','mi','cheng','far'];
+				/// Pull in the measure plugins. Only show active plugins.
+				let measures = Object.entries(measurePlugins).filter(([k,m]) => m.active).map(([k,m]) => k);
 				let calculateOpts = {jointCause: null};
 				
 				let backupCpts = {};
@@ -574,7 +347,27 @@ module.exports = {
 						let causeName = roles2.cause[0];
 						net.node(causeName).cpt1d(origNet.node(causeName).cpt1d().slice());
 					}*/
-					for (let node of net.nodes()) {
+					let effect = roles?.effect?.[0];
+					let nodesToCheck = net.nodes();
+					let uncheckedNodes = [];
+					/// If there's no evidence, we can limit to the effect's ancestors
+					if (Object.keys(net.findings()).length==0) {
+						let toVisit = origNet.node(effect).parents().map(p => p.name());
+						nodesToCheck = new Set(toVisit);
+						for (let i=0; i<toVisit.length; i++) {
+							origNet.node(toVisit[i]).parents().forEach(p => {
+								if (!nodesToCheck.has(p.name())) {
+									nodesToCheck.add(p.name());
+									toVisit.push(p.name());
+								}
+							})
+						}
+						nodesToCheck.add(effect);
+						uncheckedNodes = net.nodes().filter(n => !nodesToCheck.has(n.name()));
+						nodesToCheck = [...nodesToCheck].map(pn => net.node(pn));
+					}
+					console.log(`Doing CI for ${nodesToCheck.length} nodes out of ${net.nodes().length}`);
+					for (let node of nodesToCheck) {
 						/** NOTE: IT MAY BE THE CASE that GeNIe doesn't like having its CPT changed from
 						under it, when there's evidence already in the net. (But I'm not sure; it was producing funny,
 						temperamental results that looked like it wasn't "seeing" the new CPT.) SO ALWAYS: retract findings,
@@ -611,7 +404,9 @@ module.exports = {
 
 						node.cpt1d(origNet.node(causeName).cpt1d().slice());
 					}
-					let effect = roles?.effect?.[0];
+					for (let node of uncheckedNodes) {
+						allResults.push( {cause: node.name(), value: 0, percent: 0, _effectValue: 0, title: 'Causal information'}  );
+					}
 					let miTable = origNet.mi(origNet.node(effect), {
 						targetStates: selectedStates[effect],
 					});
@@ -619,6 +414,7 @@ module.exports = {
 						let matchingRow = allResults.find(row2 => row2.cause == row[0]);
 						if (matchingRow)  matchingRow.mi = row[1];
 					}
+					allResults.sort((a,b) => b.value - a.value);
 					bn.ciTable = allResults;
 					console.log('Done CI Table');
 				}
@@ -632,6 +428,7 @@ module.exports = {
 						net.nodes().map(node => ({
 							type: 'node',
 							name: p(node.name()),
+							title: node.title(),
 							pos: node.position(),
 							size: node.size(),
 							parents: node.parents().map(p => p.name()),

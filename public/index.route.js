@@ -7,7 +7,7 @@ class CbnList {
 			n('div.sideBar',
 				n('div.catIntro.box',
 					n('h2', 'What is CAT?'),
-					n('p', `Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.`),
+					n('p', `CAT (the Causal Attribution Tool) is a tool for exploring different causal scenarios incorporating uncertainties and allowing you to entertain and test different hypotheses about what is causing what in those scenarios. CAT will also allow you to compare alternative ideas about the nature of causal attribution itself; that is, distinct criteria for judging causal attribution can (and will) be implemented – although we have implemented our own preferred criterion first, naturally, along with a couple of popular alternatives.`),
 					n('div.controls',
 						n('button', {href: sitePath('/what_is_cat')}, 'Read more...'),
 					),
@@ -49,8 +49,8 @@ class CbnList {
 	
 	toHtml() { return this.root.outerHTML; }
 	
-	makeBnEntry(bn) {
-		return n('div.cbn.box',
+	makeBnEntry(bn, o = {}) {
+		return n('div.cbn.box', {dataBnId: bn.id},
 			n('a', n('h2', {href: sitePath(`bn?id=${bn.id}`)}, bn.name)),
 			n('p.description', bn.description),
 			n('div.fields',
@@ -58,6 +58,7 @@ class CbnList {
 				bn.keywords && n('div.field',   n('label', 'Keywords:'), n('span', bn.keywords),   ),
 			),
 			n('div.controls',
+				o.editable ? n('button', 'Delete', {onclick:`deleteBn(${bn.id})`}) : '',
 				n('button', 'Open', {href: sitePath(`bn?id=${bn.id}`)}),
 			),
 		);
@@ -77,7 +78,7 @@ class CbnList {
 				this.myBnListContents.firstChild.remove();
 			}
 			this.myBnListContents.append(
-				...m.myBns.map(bn => this.makeBnEntry(bn)),
+				...m.myBns.map(bn => this.makeBnEntry(bn, {editable:true})),
 			);
 		}
 		/*if (m.hasUser != null) {
