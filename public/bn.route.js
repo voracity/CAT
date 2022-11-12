@@ -257,8 +257,8 @@ module.exports = {
 					req._page.$handleUpdate({h1: (bn || {}).name || '(unsaved)'});
 				}
 				
-				let bnUserId = (await db.get('select userId from bns where id = ?', req.query.id)).userId;
-				if (bnUserId != userInfo?.userId) {
+				let bnUserId = (await db.get('select userId from bns where id = ?', req.query.id));
+				if (!bnUserId || bnUserId != userInfo?.userId) {
 					bn.nosave = true;
 				}
 				
