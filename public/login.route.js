@@ -45,8 +45,24 @@ class Login {
 			);
 		}
 		else if (data.step == 2) {
-			if (data.register) {
-				this.root = n('div', 'User registered');
+			console.log(data);
+			if (data.userExists) {
+				this.root = n('div.contentPage',
+					n('h2', 'Username already exists'),
+					n('p', `It appears that username already exists. Please try with a different username.`),
+				);
+			}
+			else if (data.emailExists) {
+				this.root = n('div.contentPage',
+					n('h2', 'Email already exists'),
+					n('p', `It appears that email already exists. Please try with a different email.`),
+				);
+			}
+			else if (data.register) {
+				this.root = n('div.contentPage',
+					n('h2', 'Thanks for registering!'),
+					n('p', `Thanks, ${data.details.username}, for taking an interest in CAT: The Causal Attribution Tool. You can now login using the button at the top right of the screen.`),
+				);
 			}
 		}
 	}
@@ -57,6 +73,7 @@ module.exports = {
 	template: 'StandardPage',
 	component: Login,
 	async prepareData(req,res,db) {
+		let extras = {};
 		if (req.query.register) {
 			if (req.query.step == 2) {
 				let salt = await bcrypt.genSalt(10);
@@ -67,7 +84,17 @@ module.exports = {
 					password: hashedPwd,
 				};
 				console.log(details);
-				await db.run('insert into users (username, email, password) values (:username, :email, :password)', ...Object.values(details));
+				let userExist = await db.get('select 1 from users where username like :username', details.username);
+				let emailExist = await db.get('select 1 from users where email like :email', details.email);
+				if (userExist || emailExist) {
+					extras.userExists = Boolean(userExist);
+					extras.emailExists = Boolean(emailExist);
+				}
+				else {
+					await db.run('insert into users (username, email, password) values (:username, :email, :password)', ...Object.values(details));
+					extras.register = 1;
+					extras.details = details;
+				}
 			}
 		}
 		else if (req.query.logout) {
@@ -91,6 +118,6 @@ module.exports = {
 			}
 		}
 		
-		return {step: req.query.step || 1};
+		return {step: req.query.step || 1, ...extras};
 	}
 }

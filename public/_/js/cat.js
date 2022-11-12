@@ -9,7 +9,7 @@ window.addEventListener('DOMContentLoaded', event => {
 		]);
 		let content = await fetch('/login?requestType=slice').then(r=>r.text());
 		dlg.querySelector('.form').innerHTML = content;
-		dlg.querySelector('.controls').append(n('button', 'Cancel', {type: 'button', on: {click: ui.dismissDialogs}}));
+		dlg.querySelector('.controls').prepend(n('button', 'Cancel', {type: 'button', on: {click: ui.dismissDialogs}}));
 	});
 
 	/** Drag and drop **/

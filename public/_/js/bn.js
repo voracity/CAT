@@ -53,9 +53,14 @@ var bn = {
 			for (let node of reqData.model) {
 				this.beliefs[node.name] = node.beliefs;
 			}
-			this.measureResults = reqData.measureResults;
+			for (let [k,v] of Object.entries(reqData)) {
+				if (!(k in this)) {
+					this[k] = v;
+				}
+			}
+			/*this.measureResults = reqData.measureResults;
 			/// Where is the evidence located, relative to cause/effect
-			this.evLocation = reqData.evLocation;
+			this.evLocation = reqData.evLocation;*/
 			this.gui('Update');
 		})();
 		this.guiUpdateInfoWindows();
@@ -467,6 +472,9 @@ function setupScenarioEvents() {
 document.addEventListener('DOMContentLoaded', event => {
 	window.bnDetail = new BnDetail;
 	bnDetail.make(document.querySelector('.bnDetail'));
+	/// XXX: At the moment, this is needed to get a first pass of things like description.
+	/// Need to fix this.
+	bn.update();
 	document.querySelector('.bnView').addEventListener('click', async event => {
 		let target = event.target.closest('.target');
 		if (target) {
@@ -524,24 +532,34 @@ document.addEventListener('DOMContentLoaded', event => {
 			let bnName = dlg.querySelector('[name=bnName]').value;
 			let bnDescription = dlg.querySelector('[name=description]').value;
 			bnDetail.$handleUpdate({title: bnName, temporary: false});
-			let fd = new FormData();
-			fd.append('name', bnName);
-			fd.append('description', bnDescription);
-			fd.append('key', qs.get('tempId'));
-			fd.append('type', qs.get('type'));
+			if (qs.get('tempId')) {
+				let fd = new FormData();
+				fd.append('name', bnName);
+				fd.append('description', bnDescription);
+				fd.append('key', qs.get('tempId'));
+				fd.append('type', qs.get('type'));
+				let res = await fetch('/upload?step=2&requestType=data', {method:'POST', body: fd}).then(r => r.json());
+				let usp = new URLSearchParams({id: res.id});
+				history.replaceState(null, '', '?'+usp.toString());
+			}
+			else if (qs.get('id')) {
+				let fd = new FormData();
+				fd.append('updates', JSON.stringify({id:qs.get('id'),name:bnName, description:bnDescription}));
+				let res = await fetch('/bn?requestType=data&updateBn=1', {method:'POST', body: fd});
+			}
+			bn.description = bnDescription;
 			ui.dismissDialogs();
-			let res = await fetch('/upload?step=2&requestType=data', {method:'POST', body: fd}).then(r => r.json());
-			let usp = new URLSearchParams({id: res.id});
-			history.replaceState(null, '', '?'+usp.toString());
 		};
 		let dlg = ui.popupDialog([
 			n('h2', 'Save BN'),
-			n('div',
-				n('label', 'Name:'),
-				n('input', {type: 'text', name: 'bnName', value: q('h1 .text').textContent}),
-			),
-			n('div',
-				n('textarea', {name:'description', placeholder: 'Description'}),
+			n('div.form.saveBn',
+				n('div.field',
+					n('label', 'Name:'),
+					n('input', {type: 'text', name: 'bnName', value: q('h1 .text').textContent}),
+				),
+				n('div.field',
+					n('textarea', {name:'description', placeholder: 'Description'}, bn.description),
+				),
 			),
 		], {buttons: [
 			n('button.save', 'Save', {on: {click: doSave}}),

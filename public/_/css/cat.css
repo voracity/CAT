@@ -36,7 +36,7 @@ h1 .logo:hover { filter: drop-shadow(3px 3px 3px #aaaa); }
 h2 { margin: 0; margin-bottom: 0.5em; }
 
 button { background: var(--button-color); border: none; color: white; padding: 4px 8px; border: solid 1px #444; }
-button { margin-left: 3px; }
+button { margin-left: 3px; cursor: pointer; }
 
 .header { font-size: 24px; padding: 20px 10px; border-bottom: solid 1px #555; height: 132px;
 	/*background: url(/_/images/cat_logo.png) no-repeat left 15px center/auto 75%;*/ display: flex; }
@@ -61,7 +61,7 @@ button { margin-left: 3px; }
 .uploadChoice .divider { flex: unset; width: 1px; height: 50%; display: flex; border-left: solid 1px #ccc; align-items: center; }
 .uploadChoice .divider span { margin-left: -15px; display: block; min-width: 30px; text-align: center; }
 
-.form { display: grid; grid-template-columns: auto 1fr; max-width: 30em; }
+.form { display: grid; grid-template-columns: auto 1fr; max-width: 30em; grid-gap: 2px 10px; }
 .form .field { display: contents; }
 .form .controls { grid-column: 1 / -1; }
 
@@ -157,6 +157,8 @@ path[marker-end="url(#arrowheadBlocked)"] { opacity: 0.3; }
 .bnDetail .controls .scenario { width: 15em; margin-left: 3px; }
 .bnDetail .controls .gap { width: 1em; display: inline-block; }
 
+.saveBn .field:nth-child(2) textarea { grid-column: 1 / -1; }
+
 .upload.box.dragover { background: var(--back-color1); color: var(--back-textcolor1); }
 .dragover * { pointer-events: none; }
 
@@ -175,8 +177,10 @@ path[marker-end="url(#arrowheadBlocked)"] { opacity: 0.3; }
 .cbn .fields label { display: inline-block; width: 6em; }
 .cbn .controls { position: absolute; bottom: 15px; right: 15px; }
 
+/** Typical content page **/
+.contentPage { max-width: 60em; margin: auto; }
+
 /** What is CAT? page **/
-.whatIsCat { max-width: 60em; margin: auto; }
 .c35 { text-align: center; }
 :is(.c29,.c47) { border: solid 1px black; padding: 1em; background: var(--back-color2); }
 :is(.c29,.c47) p { margin: 0; }

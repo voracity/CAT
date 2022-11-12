@@ -47,7 +47,7 @@ class StandardPage {
 			this.root.querySelector('title').textContent = m.title;
 		}
 		if (m.user) {
-			chain(this.loginSection).set({innerHTML:''}).append(n('span.username', m.user.username, {onclick: 'userBox()'}));
+			chain(this.loginSection).set({innerHTML:''}).append(n('span.username', m.user.username || '-', {onclick: 'userBox()'}));
 		}
 		if ('user' in m) {
 			console.log(m.user, m.user == null);

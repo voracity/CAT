@@ -178,15 +178,21 @@ module.exports = {
 			console.log('UPDATING');
 			let updates = JSON.parse(req.body.updates);
 			let updParams = {};
+			let sep = '';
+			let updStr = '';
 			for (let [k,v] of Object.entries(updates)) {
 				updParams['$'+k] = v;
+				if (k=="id")  continue;
+				updStr += sep + k + '=$'+k;
+				sep = ',';
 			}
 			let ok = await db.get('select 1 from bns where userId = ? and id = ?', userInfo.userId, Number(updates.id));
 			console.log(ok, userInfo.userId, updates.id);
 			if (ok) {
 				//updates
 				/// XXX: Validate update entries
-				db.run('update bns set visibility = $visibility where id = $id', updParams);
+				console.log('update bns set '+updStr+' where id = $id');
+				db.run('update bns set '+updStr+' where id = $id', updParams);
 			}
 		}
 		else {
@@ -205,7 +211,7 @@ module.exports = {
 					bn.temporary = true;
 				}
 				else {
-					bn = await db.get('select name, url, visibility from bns where id = ?', req.query.id);
+					bn = await db.get('select name, url, visibility, description from bns where id = ?', req.query.id);
 					bn.temporary = false;
 					bnKey = `public/bns/${bn.url}`;
 				}
