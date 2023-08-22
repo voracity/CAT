@@ -606,6 +606,172 @@ class Net {
 		//return sorted(miTable, key = lambda x: x[1], reverse=True)
 		return miTable
 	}
+	
+	/**
+	Get all nodes or arcs (or arc traversals) on the d-connected paths from |sourceNode|
+	to |destNode|. (Note that arc traversals depend on direction, while arcs/nodes do not.)
+	
+	Options:
+		<none>: Get all nodes on d-connected paths between sourceNode & destNode.
+		arcs: Get all arcs on d-connected paths. These are returned as `${parentId}-${childId}`.
+		arcTraversal: Get arcs, and add traversal direction. Returned as `${parentId}-${childId}|${dir}`,
+		              where |dir| is either "down" (parent to child) or "up" (child to parent).
+		noSourceParents: Don't follow parents out of the sourceNode. Since only children are followed,
+		                 omits all backdoor paths.
+		noSourceChildren: Don't follow children out of the sourceNode. Since only parents are followed,
+		                  omits all selection bias and causal paths.
+	*/
+	findAllDConnectedNodes(sourceNode, destNode, o = {}) {
+		o.arcTraversal ??= false;
+		o.arcs = o.arcTraversal || (o.arcs ?? false);
+		o.noSourceParents ??= false;
+		o.noSourceChildren ??= false;
+		if (typeof(sourceNode)=="string")  sourceNode = this.node(sourceNode);
+		if (typeof(destNode)=="string")  destNode = this.node(destNode);
+		
+		let PARENTS = 0b01;
+		let CHILDREN = 0b10;
+		let PARENTSANDCHILDREN = 0b11;
+
+		/*
+		Alternative, not required:
+		function hasLoop(path, end) {
+			for (let i=path.length-1; i>=0; i--) {
+				if (end[0] == path[i][0] && (path[i][1]==PARENTSANDCHILDREN || end[1]==path[i][1])) {
+					return true;
+				}
+			}
+			return false;
+		}
+		*/
+		function hasLoop(path, end) {
+			for (let i=path.length-1; i>=0; i--) {
+				if (end[0] == path[i][0]) {
+					return true;
+				}
+			}
+			return false;
+		}
+		
+		/** Map GeNIe BN to MB BN **/
+		function makeDag(bn) {
+			let dag = {};
+			for (let node of bn.nodes()) {
+				dag[node.name()] = {
+					id: node.name(),
+					parents: node.parents(), children: node.children(),
+					intervene: false, /// Can change this if want to easily specify that arcs into the node have been cut
+					hasEvidence() {
+						return node.finding()!==null;
+					},
+					getDescendants() {
+						let descendants = new Set();
+						let toVisit = [this];
+						while (toVisit.length) {
+							let next = toVisit.shift();
+							next.children.forEach(c => descendants.add(c));
+							toVisit.push(...next.children);
+						}
+						return [...descendants];
+					},
+					isParent(toNode) {
+						return this.children.includes(toNode);
+					},
+				};
+			}
+			/// Replace par/child references to dag node refs
+			for (let [id,dagNode] of Object.entries(dag)) {
+				dagNode.parents = dagNode.parents.map(p => dag[p.name()]);
+				//console.log(dagNode.children);
+				dagNode.children = dagNode.children.map(c => dag[c.name()]);
+			}
+			
+			// let util = require('util');
+			// console.log(util.inspect(dag, {depth:3}));
+			
+			return dag;
+		}
+		
+		// console.log(sourceNode,destNode);
+		let dag = makeDag(this);
+		sourceNode = dag[sourceNode.name()];
+		destNode = dag[destNode.name()];
+		
+		let downstreamEv = Object.fromEntries(Object.values(dag).map(n => [n.id, n.getDescendants().map(n=>n.hasEvidence()).reduce((a,v)=>a+v,0)]));
+		// console.log(downstreamEv);
+
+		let pathsQueue = [[[sourceNode, PARENTSANDCHILDREN]]];
+		let foundPaths = [];
+		let resolved = {};
+		let arcs = new Set();
+		
+		let nodeDirKey = nodeDir => `${nodeDir[0].id}-${nodeDir[1]}`
+		function resolvePath(path, howResolved = true) {
+			// console.log(path);
+			let prevNodeDir = null;
+			for (let currentNodeDir of path) {
+				if (prevNodeDir) {
+					let par = prevNodeDir[0], child = currentNodeDir[0];
+					let swap = child.isParent(par);
+					if (swap)  [par,child] = [child,par];
+					if (o.arcTraversal) {
+						if (!swap)  arcs.add(`${par.id}-${child.id}|down`);
+						else        arcs.add(`${par.id}-${child.id}|up`);
+					}
+					else {
+						arcs.add(`${par.id}-${child.id}`);
+					}
+				}
+				resolved[nodeDirKey(currentNodeDir)] = howResolved ? currentNodeDir[0] : false;
+				prevNodeDir = currentNodeDir;
+			}
+		}
+		function nodeDirIsResolved(nodeDir) {
+			return Boolean(resolved[nodeDirKey(nodeDir)]);
+		}
+		let checkedBefore = 0;
+		let checkedAfter = 0;
+		while (pathsQueue.length) {
+			let currentPath = pathsQueue.shift();
+			
+			checkedBefore++;
+			if (nodeDirIsResolved(currentPath.at(-1))) {
+				resolvePath(currentPath);
+				continue;
+			}
+			checkedAfter++;
+			
+			let currentNode = currentPath.at(-1)[0];
+			if (currentNode == destNode) {
+				// foundPaths.push(currentPath.map(entry => entry[0].id).join(' - '));
+				// foundPaths.push(currentPath.map(entry => entry[0]));
+				resolvePath(currentPath);
+			}
+			else {
+				let checkParents = !currentNode.intervene && (!o.noSourceParents || currentNode != sourceNode);
+				let checkChildren = !o.noSourceChildren || currentNode != sourceNode;
+				if (checkParents && (currentPath.at(-1)[1]&PARENTS)==PARENTS) {
+					// console.log(currentNode);
+					let nextPaths = currentNode.parents
+						.filter(p => !p.hasEvidence() && !hasLoop(currentPath,[p,PARENTSANDCHILDREN]))
+						.map(p => currentPath.concat([[p,PARENTSANDCHILDREN]]));
+					pathsQueue.push(...nextPaths);
+				}
+				if (checkChildren && (currentPath.at(-1)[1]&CHILDREN)==CHILDREN) {
+					let nextPaths = currentNode.children
+						.filter(c => !hasLoop(currentPath,[c, c.hasEvidence()?PARENTS:(downstreamEv[c.id]?PARENTSANDCHILDREN:CHILDREN)]))
+						.map(c => currentPath.concat([[c, c.hasEvidence()?PARENTS:(downstreamEv[c.id]?PARENTSANDCHILDREN:CHILDREN)]]));
+					pathsQueue.push(...nextPaths);
+				}
+			}
+		}
+		// console.log(checkedBefore, '/', checkedAfter);
+		
+		if (o.arcs) {
+			return [...arcs];
+		}
+		return [...new Set(Object.values(resolved))].map(n => this.node(n.id)); // Convert back to GeNIe before going back
+	}
 }
 
 class Node {
